@@ -147,6 +147,10 @@ check_disk_space
 CURRENT_FILE_PATH=$(realpath "${0}")
 # Set the TUN_PATH variable to the path of the TUN device
 LOCAL_TUN_PATH="/dev/net/tun"
+# Set the path to the oepnvpn server directory
+OPENVPN_SERVER_DIRECTORY="/etc/openvpn"
+# Set the path to the openvpn server config
+OPENVPN_SERVER_CONFIG=${OPENVPN_SERVER_DIRECTORY}"/server.conf"
 
 # Define the function check_local_tun
 function check_local_tun() {
@@ -176,3 +180,122 @@ function check_local_tun() {
 
 # Call the check_local_tun function to check for the TUN device
 check_local_tun
+
+# This is a Bash function named "get_network_information" that retrieves network information.
+function get_network_information() {
+  # This variable will store the IPv4 address of the default network interface by querying the "ipengine" API using "curl" command and extracting it using "jq" command.
+  DEFAULT_INTERFACE_IPV4="$(curl --ipv4 --connect-timeout 5 --tlsv1.2 --silent 'https://checkip.amazonaws.com')"
+  # If the IPv4 address is empty, try getting it from another API.
+  if [ -z "${DEFAULT_INTERFACE_IPV4}" ]; then
+    DEFAULT_INTERFACE_IPV4="$(curl --ipv4 --connect-timeout 5 --tlsv1.3 --silent 'https://icanhazip.com')"
+  fi
+  # This variable will store the IPv6 address of the default network interface by querying the "ipengine" API using "curl" command and extracting it using "jq" command.
+  DEFAULT_INTERFACE_IPV6="$(curl --ipv6 --connect-timeout 5 --tlsv1.3 --silent 'https://ifconfig.co')"
+  # If the IPv6 address is empty, try getting it from another API.
+  if [ -z "${DEFAULT_INTERFACE_IPV6}" ]; then
+    DEFAULT_INTERFACE_IPV6="$(curl --ipv6 --connect-timeout 5 --tlsv1.3 --silent 'https://icanhazip.com')"
+  fi
+}
+
+# Set up the openvpn, if config it isn't already there.
+if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; the
+
+  # Define a function to retrieve the IPv4 address of the WireGuard interface
+  function test_connectivity_v4() {
+    # Prompt the user to choose the method for detecting the IPv4 address
+    echo "How would you like to detect IPv4?"
+    echo "  1) Curl (Recommended)"
+    echo "  2) Custom (Advanced)"
+    # Loop until the user provides a valid input
+    until [[ "${SERVER_HOST_V4_SETTINGS}" =~ ^[1-2]$ ]]; do
+      read -rp "IPv4 Choice [1-2]:" -e -i 1 SERVER_HOST_V4_SETTINGS
+    done
+    # Choose the method for detecting the IPv4 address based on the user's input
+    case ${SERVER_HOST_V4_SETTINGS} in
+    1)
+    
+      SERVER_HOST_V4=${DEFAULT_INTERFACE_IPV4} # Use the default IPv4 address
+      ;;
+    2)
+      # Prompt the user to enter a custom IPv4 address
+      read -rp "Custom IPv4:" SERVER_HOST_V4
+      # If the user doesn't provide an input, use the default IPv4 address
+      if [ -z "${SERVER_HOST_V4}" ]; then
+        SERVER_HOST_V4=${DEFAULT_INTERFACE_IPV4}
+      fi
+      ;;
+    esac
+  }
+
+  # Call the function to retrieve the IPv4 address
+  test_connectivity_v4
+
+  # Define a function to retrieve the IPv6 address of the WireGuard interface
+  function test_connectivity_v6() {
+    # Prompt the user to choose the method for detecting the IPv6 address
+    echo "How would you like to detect IPv6?"
+    echo "  1) Curl (Recommended)"
+    echo "  2) Custom (Advanced)"
+    # Loop until the user provides a valid input
+    until [[ "${SERVER_HOST_V6_SETTINGS}" =~ ^[1-2]$ ]]; do
+      read -rp "IPv6 Choice [1-2]:" -e -i 1 SERVER_HOST_V6_SETTINGS
+    done
+    # Choose the method for detecting the IPv6 address based on the user's input
+    case ${SERVER_HOST_V6_SETTINGS} in
+    1)
+      SERVER_HOST_V6=${DEFAULT_INTERFACE_IPV6} # Use the default IPv6 address
+      ;;
+    2)
+      # Prompt the user to enter a custom IPv6 address
+      read -rp "Custom IPv6:" SERVER_HOST_V6
+      # If the user doesn't provide an input, use the default IPv6 address
+      if [ -z "${SERVER_HOST_V6}" ]; then
+        SERVER_HOST_V6=${DEFAULT_INTERFACE_IPV6}
+      fi
+      ;;
+    esac
+  }
+
+  # Call the function to retrieve the IPv6 address
+  test_connectivity_v6
+
+  # Define a function to configure the protocol settings for OpenVPN
+  function configure_protocol() {
+    # Prompt the user to configure the primary and secondary protocols
+    echo "Select the primary and secondary protocols for OpenVPN:"
+    echo "  1) UDP as primary, TCP as secondary (Recommended)"
+    echo "  2) TCP as primary, UDP as secondary"
+    echo "  3) UDP only (No secondary)"
+    echo "  4) TCP only (No secondary)"
+    # Loop until the user provides a valid input
+    until [[ "${PROTOCOL_CHOICE}" =~ ^[1-4]$ ]]; do
+      read -rp "Protocol Choice [1-4]: " -e -i 1 PROTOCOL_CHOICE
+    done
+    # Set the protocols based on the user's choice
+    case ${PROTOCOL_CHOICE} in
+    1)
+      PRIMARY_PROTOCOL="udp"
+      SECONDARY_PROTOCOL="tcp"
+      ;;
+    2)
+      PRIMARY_PROTOCOL="tcp"
+      SECONDARY_PROTOCOL="udp"
+      ;;
+    3)
+      PRIMARY_PROTOCOL="udp"
+      SECONDARY_PROTOCOL="none"
+      ;;
+    4)
+      PRIMARY_PROTOCOL="tcp"
+      SECONDARY_PROTOCOL="none"
+      ;;
+    esac
+  }
+
+  # Call the function to configure the protocol settings
+  configure_protocol
+
+# If oepnvpn config is found than lets manage it using the manager
+else
+
+fi
