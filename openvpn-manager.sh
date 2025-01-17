@@ -343,6 +343,20 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Call the function to execute the OpenVPN port configuration process
   configure_openvpn_ports
 
+  # Function to install either resolvconf or openresolv, depending on the distribution.
+  function install_resolvconf_or_openresolv() {
+    # Check if resolvconf is already installed on the system.
+    if [ ! -x "$(command -v resolvconf)" ]; then
+      # If resolvconf is not installed, install it for Ubuntu, Debian, Raspbian, Pop, Kali, Linux Mint, and Neon distributions.
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+        apt-get install resolvconf -y
+      fi
+    fi
+  }
+
+  # Invoke the function to install either resolvconf or openresolv, depending on the distribution.
+  install_resolvconf_or_openresolv
+
   # Function to install Unbound, a DNS resolver, if required and not already installed.
   function install_unbound() {
     # If INSTALL_UNBOUND is true and Unbound is not installed, proceed with installation.
@@ -439,6 +453,24 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     fi
   }
 
+  # Function to prompt for the name of the first OpenVPN client.
+  function client_name() {
+    # If CLIENT_NAME variable is not set, prompt the user for input.
+    if [ -z "${CLIENT_NAME}" ]; then
+      # Display naming rules to the user.
+      echo "Please provide a name for the OpenVPN client. The name should be a single word, without special characters or spaces."
+      # Read the user's input, offering a random string as the default name.
+      read -rp "Client name: " -e -i "$(openssl rand -hex 5)" CLIENT_NAME
+    fi
+    # If no name is provided by the user, assign a random string as the name.
+    if [ -z "${CLIENT_NAME}" ]; then
+      CLIENT_NAME="$(openssl rand -hex 5)"
+    fi
+  }
+
+  # Invoke the function to prompt for the first OpenVPN client's name.
+  client_name
+
   # Call the function to install Unbound.
   install_unbound
 
@@ -458,20 +490,6 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   HMAC_DIGEST="SHA-512" # Strongest HMAC digest for better security
   # Set tls-auth or tls-crypt
   TLS_AUTH_MODE="tls-crypt" # Provides encryption and authentication for control channel
-
-  # Function to install either resolvconf or openresolv, depending on the distribution.
-  function install_resolvconf_or_openresolv() {
-    # Check if resolvconf is already installed on the system.
-    if [ ! -x "$(command -v resolvconf)" ]; then
-      # If resolvconf is not installed, install it for Ubuntu, Debian, Raspbian, Pop, Kali, Linux Mint, and Neon distributions.
-      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
-        apt-get install resolvconf -y
-      fi
-    fi
-  }
-
-  # Invoke the function to install either resolvconf or openresolv, depending on the distribution.
-  install_resolvconf_or_openresolv
 
 # If oepnvpn config is found than lets manage it using the manager
 else
