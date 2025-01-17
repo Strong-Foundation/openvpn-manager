@@ -512,7 +512,7 @@ else
     echo "   12) Update OpenVPN interface IP"
     echo "   13) Update OpenVPN interface port"
     echo "   14) Remove all OpenVPN clients"
-    echo "   15) Generate a QR code for OpenVPN configuration"
+    echo "   15) Show OpenVPN client configuration"
     echo "   16) Verify OpenVPN configuration integrity"
 
     # Keep asking for a valid option until one is selected
@@ -580,7 +580,7 @@ else
       ;;
     15)
       # Generate a QR code for OpenVPN configuration for clients
-      generate_openvpn_qr_code
+      show_openvpn_client_configuration
       ;;
     16)
       # Verify OpenVPN configurations for integrity and correctness
