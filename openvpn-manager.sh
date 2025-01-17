@@ -111,8 +111,23 @@ function check_local_tun() {
     if [ ! -e "${LOCAL_TUN_PATH}" ]; then
         # Print an error message if the path doesn't exist
         echo "Error: ${LOCAL_TUN_PATH} not found!"
-        # Exit the script with an error code
-        exit
+        # Try to load the TUN module
+        echo "Attempting to load the TUN module..."
+        sudo modprobe tun
+        # Wait a moment for the module to load and then check again
+        sleep 30
+        # Check again if the TUN device exists after trying to load the module
+        if [ ! -e "${LOCAL_TUN_PATH}" ]; then
+            # If still not found, print an error and exit with an error code
+            echo "Error: ${LOCAL_TUN_PATH} still not found after loading the module!"
+            exit 1
+        else
+            # If the device is found after loading the module, print a success message
+            echo "TUN device found at ${LOCAL_TUN_PATH}."
+        fi
+    else
+        # If the device is found initially, print a success message
+        echo "TUN device found at ${LOCAL_TUN_PATH}."
     fi
 }
 
