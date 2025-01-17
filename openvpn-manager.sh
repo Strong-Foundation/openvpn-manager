@@ -202,6 +202,8 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Define a function to retrieve the IPv4 address of the WireGuard interface
   function test_connectivity_v4() {
+    # "get_network_information" that retrieves network information.
+    get_network_information
     # Prompt the user to choose the method for detecting the IPv4 address
     echo "How would you like to detect IPv4?"
     echo "  1) Curl (Recommended)"
@@ -273,19 +275,19 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Set the protocols based on the user's choice
     case ${PROTOCOL_CHOICE} in
     1)
-      PRIMARY_PROTOCOL="udp"
-      SECONDARY_PROTOCOL="tcp"
+      PRIMARY_PROTOCOL="UDP"
+      SECONDARY_PROTOCOL="TCP"
       ;;
     2)
-      PRIMARY_PROTOCOL="tcp"
-      SECONDARY_PROTOCOL="udp"
+      PRIMARY_PROTOCOL="TCP"
+      SECONDARY_PROTOCOL="UDP"
       ;;
     3)
-      PRIMARY_PROTOCOL="udp"
+      PRIMARY_PROTOCOL="UDP"
       SECONDARY_PROTOCOL="none"
       ;;
     4)
-      PRIMARY_PROTOCOL="tcp"
+      PRIMARY_PROTOCOL="TCP"
       SECONDARY_PROTOCOL="none"
       ;;
     esac
@@ -299,7 +301,6 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Show the default and custom port options to the user
     echo "  1) 1194 (Default and Recommended)"
     echo "  2) Custom (Advanced)"
-
     # Prompt the user until a valid option (1 or 2) is selected
     until [[ "${SERVER_PORT_SETTINGS}" =~ ^[1-2]$ ]]; do
       # Ask the user to choose a port option, defaulting to 1 (1194)
@@ -341,6 +342,136 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Call the function to execute the OpenVPN port configuration process
   configure_openvpn_ports
+
+  # Function to install Unbound, a DNS resolver, if required and not already installed.
+  function install_unbound() {
+    # If INSTALL_UNBOUND is true and Unbound is not installed, proceed with installation.
+    if [ "${INSTALL_UNBOUND}" == true ]; then
+      if [ ! -x "$(command -v unbound)" ]; then
+        # Installation commands for Unbound vary based on the Linux distribution.
+        # The following checks the distribution and installs Unbound accordingly.
+        # For Debian-based distributions:
+        if { [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+          apt-get install unbound unbound-host unbound-anchor -y
+          # If the distribution is Ubuntu, disable systemd-resolved.
+          if [ "${CURRENT_DISTRO}" == "ubuntu" ]; then
+            if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+              systemctl disable --now systemd-resolved
+            elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+              service systemd-resolved stop
+            fi
+          fi
+        fi
+      fi
+      # Configure Unbound using anchor and root hints.
+      unbound-anchor -a ${UNBOUND_ANCHOR}
+      # Download root hints.
+      curl "${UNBOUND_ROOT_SERVER_CONFIG_URL}" --create-dirs -o ${UNBOUND_ROOT_HINTS}
+      # Configure Unbound settings.
+      # The settings are stored in a temporary variable and then written to the Unbound configuration file.
+      # If INSTALL_BLOCK_LIST is true, include a block list in the Unbound configuration.
+      # Configure Unbound settings.
+      UNBOUND_TEMP_INTERFACE_INFO="server:
+\tnum-threads: $(nproc)
+\tverbosity: 0
+\troot-hints: ${UNBOUND_ROOT_HINTS}
+\tauto-trust-anchor-file: ${UNBOUND_ANCHOR}
+\tinterface: 0.0.0.0
+\tinterface: ::0
+\tport: 53
+\tmax-udp-size: 3072
+\taccess-control: 0.0.0.0/0\trefuse
+\taccess-control: ::0\trefuse
+\taccess-control: ${PRIVATE_SUBNET_V4}\tallow
+\taccess-control: ${PRIVATE_SUBNET_V6}\tallow
+\taccess-control: 127.0.0.1\tallow
+\taccess-control: ::1\tallow
+\tprivate-address: ${PRIVATE_SUBNET_V4}
+\tprivate-address: ${PRIVATE_SUBNET_V6}
+\tprivate-address: 10.0.0.0/8
+\tprivate-address: 127.0.0.0/8
+\tprivate-address: 169.254.0.0/16
+\tprivate-address: 172.16.0.0/12
+\tprivate-address: 192.168.0.0/16
+\tprivate-address: ::ffff:0:0/96
+\tprivate-address: fd00::/8
+\tprivate-address: fe80::/10
+\tdo-ip4: yes
+\tdo-ip6: yes
+\tdo-udp: yes
+\tdo-tcp: yes
+\tchroot: \"\"
+\thide-identity: yes
+\thide-version: yes
+\tharden-glue: yes
+\tharden-dnssec-stripped: yes
+\tharden-referral-path: yes
+\tunwanted-reply-threshold: 10000000
+\tcache-min-ttl: 86400
+\tcache-max-ttl: 2592000
+\tprefetch: yes
+\tqname-minimisation: yes
+\tprefetch-key: yes"
+      echo -e "${UNBOUND_TEMP_INTERFACE_INFO}" | awk '!seen[$0]++' >${UNBOUND_CONFIG}
+      # Configure block list if INSTALL_BLOCK_LIST is true.
+      if [ "${INSTALL_BLOCK_LIST}" == true ]; then
+        echo -e "\tinclude: ${UNBOUND_CONFIG_HOST}" >>${UNBOUND_CONFIG}
+        if [ ! -d "${UNBOUND_CONFIG_DIRECTORY}" ]; then
+          mkdir --parents "${UNBOUND_CONFIG_DIRECTORY}"
+        fi
+        curl "${UNBOUND_CONFIG_HOST_URL}" | awk '{print "local-zone: \""$1"\" always_refuse"}' >${UNBOUND_CONFIG_HOST}
+      fi
+      # Update ownership of Unbound's root directory.
+      chown --recursive "${USER}":"${USER}" ${UNBOUND_ROOT}
+      # Update the resolv.conf file to use Unbound.
+      if [ -f "${RESOLV_CONFIG_OLD}" ]; then
+        rm --force ${RESOLV_CONFIG_OLD}
+      fi
+      if [ -f "${RESOLV_CONFIG}" ]; then
+        chattr -i ${RESOLV_CONFIG}
+        mv ${RESOLV_CONFIG} ${RESOLV_CONFIG_OLD}
+      fi
+      echo "nameserver 127.0.0.1" >${RESOLV_CONFIG}
+      echo "nameserver ::1" >>${RESOLV_CONFIG}
+      chattr +i ${RESOLV_CONFIG}
+      # Set CLIENT_DNS to use gateway addresses.
+      CLIENT_DNS="${GATEWAY_ADDRESS_V4},${GATEWAY_ADDRESS_V6}"
+    fi
+  }
+
+  # Call the function to install Unbound.
+  install_unbound
+
+  # Set cipher for the data channel
+  DATA_CHANNEL_CIPHER="AES-256-GCM" # Stronger encryption for the data channel
+  # Set certificate type
+  CERTIFICATE_TYPE="ECDSA" # Secure and efficient certificate type
+  # Set curve for certificate key
+  CERTIFICATE_CURVE="secp521r1" # Strongest curve for ECDSA
+  # Set cipher for the control channel
+  CONTROL_CHANNEL_CIPHER="ECDHE-ECDSA-AES-256-GCM-SHA384" # Strong cipher for control channel
+  # Set Diffie-Hellman key type
+  DIFFIE_HELLMAN_KEY="ECDH" # Secure and efficient Diffie-Hellman key exchange
+  # Set curve for ECDH key
+  ECDH_CURVE="secp521r1" # Strongest ECDH curve for key exchange
+  # Set HMAC digest algorithm
+  HMAC_DIGEST="SHA-512" # Strongest HMAC digest for better security
+  # Set tls-auth or tls-crypt
+  TLS_AUTH_MODE="tls-crypt" # Provides encryption and authentication for control channel
+
+  # Function to install either resolvconf or openresolv, depending on the distribution.
+  function install_resolvconf_or_openresolv() {
+    # Check if resolvconf is already installed on the system.
+    if [ ! -x "$(command -v resolvconf)" ]; then
+      # If resolvconf is not installed, install it for Ubuntu, Debian, Raspbian, Pop, Kali, Linux Mint, and Neon distributions.
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+        apt-get install resolvconf -y
+      fi
+    fi
+  }
+
+  # Invoke the function to install either resolvconf or openresolv, depending on the distribution.
+  install_resolvconf_or_openresolv
 
 # If oepnvpn config is found than lets manage it using the manager
 else
