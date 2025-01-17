@@ -63,6 +63,24 @@ function system_information() {
 # Invoke the system_information function
 system_information
 
+# Define a function to check system requirements
+function installing_system_requirements() {
+  # Check if the current Linux distribution is supported
+  if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+    # Check if required packages are already installed
+    if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ]; }; then
+      # Install required packages depending on the Linux distribution
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+        apt-get update
+        apt-get install sudo bash coreutils procps-ng kmod -y
+      fi
+    fi
+  fi
+}
+
+# Call the function to check for system requirements and install necessary packages if needed
+installing_system_requirements
+
 # The following function checks if the current init system is one of the allowed options.
 function check_current_init_system() {
   # Get the current init system by checking the process name of PID 1.
@@ -107,28 +125,28 @@ LOCAL_TUN_PATH="/dev/net/tun"
 
 # Define the function check_local_tun
 function check_local_tun() {
-    # Check if the TUN device path does not exist
+  # Check if the TUN device path does not exist
+  if [ ! -e "${LOCAL_TUN_PATH}" ]; then
+    # Print an error message if the path doesn't exist
+    echo "Error: ${LOCAL_TUN_PATH} not found!"
+    # Try to load the TUN module
+    echo "Attempting to load the TUN module..."
+    sudo modprobe tun
+    # Wait a moment for the module to load and then check again
+    sleep 30
+    # Check again if the TUN device exists after trying to load the module
     if [ ! -e "${LOCAL_TUN_PATH}" ]; then
-        # Print an error message if the path doesn't exist
-        echo "Error: ${LOCAL_TUN_PATH} not found!"
-        # Try to load the TUN module
-        echo "Attempting to load the TUN module..."
-        sudo modprobe tun
-        # Wait a moment for the module to load and then check again
-        sleep 30
-        # Check again if the TUN device exists after trying to load the module
-        if [ ! -e "${LOCAL_TUN_PATH}" ]; then
-            # If still not found, print an error and exit with an error code
-            echo "Error: ${LOCAL_TUN_PATH} still not found after loading the module!"
-            exit 1
-        else
-            # If the device is found after loading the module, print a success message
-            echo "TUN device found at ${LOCAL_TUN_PATH}."
-        fi
+      # If still not found, print an error and exit with an error code
+      echo "Error: ${LOCAL_TUN_PATH} still not found after loading the module!"
+      exit 1
     else
-        # If the device is found initially, print a success message
-        echo "TUN device found at ${LOCAL_TUN_PATH}."
+      # If the device is found after loading the module, print a success message
+      echo "TUN device found at ${LOCAL_TUN_PATH}."
     fi
+  else
+    # If the device is found initially, print a success message
+    echo "TUN device found at ${LOCAL_TUN_PATH}."
+  fi
 }
 
 # Call the check_local_tun function to check for the TUN device
