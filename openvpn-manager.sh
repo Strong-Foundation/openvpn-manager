@@ -62,3 +62,59 @@ function system_information() {
 
 # Invoke the system_information function
 system_information
+
+# The following function checks if the current init system is one of the allowed options.
+function check_current_init_system() {
+  # Get the current init system by checking the process name of PID 1.
+  CURRENT_INIT_SYSTEM=$(ps -p 1 -o comm= | awk -F'/' '{print $NF}') # Extract only the command name without the full path.
+  # Convert to lowercase to make the comparison case-insensitive.
+  CURRENT_INIT_SYSTEM=$(echo "$CURRENT_INIT_SYSTEM" | tr '[:upper:]' '[:lower:]')
+  # Log the detected init system (optional for debugging purposes).
+  echo "Detected init system: ${CURRENT_INIT_SYSTEM}"
+  # Define a list of allowed init systems (case-insensitive).
+  ALLOWED_INIT_SYSTEMS=("systemd" "sysvinit" "init" "upstart" "bash" "sh")
+  # Check if the current init system is in the list of allowed init systems
+  if [[ ! "${ALLOWED_INIT_SYSTEMS[*]}" =~ ${CURRENT_INIT_SYSTEM} ]]; then
+    # If the init system is not allowed, display an error message and exit with an error code.
+    echo "Error: The '${CURRENT_INIT_SYSTEM}' initialization system is not supported. Please stay tuned for future updates."
+    exit 1 # Exit the script with an error code.
+  fi
+}
+
+# The check_current_init_system function is being called.
+check_current_init_system
+
+# The following function checks if there's enough disk space to proceed with the installation.
+function check_disk_space() {
+  # This function checks if there is more than 1 GB of free space on the drive.
+  FREE_SPACE_ON_DRIVE_IN_MB=$(df -m / | tr --squeeze-repeats " " | tail -n1 | cut --delimiter=" " --fields=4)
+  # This line calculates the available free space on the root partition in MB.
+  if [ "${FREE_SPACE_ON_DRIVE_IN_MB}" -le 1024 ]; then
+    # If the available free space is less than or equal to 1024 MB (1 GB), display an error message and exit.
+    echo "Error: You need more than 1 GB of free space to install everything. Please free up some space and try again."
+    exit
+  fi
+}
+
+# Calls the check_disk_space function.
+check_disk_space
+
+# Global variables
+# Assigns the path of the current script to a variable
+CURRENT_FILE_PATH=$(realpath "${0}")
+# Set the TUN_PATH variable to the path of the TUN device
+LOCAL_TUN_PATH="/dev/net/tun"
+
+# Define the function check_local_tun
+function check_local_tun() {
+    # Check if the TUN device path does not exist
+    if [ ! -e "${LOCAL_TUN_PATH}" ]; then
+        # Print an error message if the path doesn't exist
+        echo "Error: ${LOCAL_TUN_PATH} not found!"
+        # Exit the script with an error code
+        exit
+    fi
+}
+
+# Call the check_local_tun function to check for the TUN device
+check_local_tun
