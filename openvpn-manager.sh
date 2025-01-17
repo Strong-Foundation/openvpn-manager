@@ -198,7 +198,7 @@ function get_network_information() {
 }
 
 # Set up the openvpn, if config it isn't already there.
-if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; the
+if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Define a function to retrieve the IPv4 address of the WireGuard interface
   function test_connectivity_v4() {
@@ -213,7 +213,6 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; the
     # Choose the method for detecting the IPv4 address based on the user's input
     case ${SERVER_HOST_V4_SETTINGS} in
     1)
-    
       SERVER_HOST_V4=${DEFAULT_INTERFACE_IPV4} # Use the default IPv4 address
       ;;
     2)
@@ -295,7 +294,153 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; the
   # Call the function to configure the protocol settings
   configure_protocol
 
+  # Define a function to configure OpenVPN server ports with two separate checks
+  function configure_openvpn_ports() {
+    # Show the default and custom port options to the user
+    echo "  1) 1194 (Default and Recommended)"
+    echo "  2) Custom (Advanced)"
+
+    # Prompt the user until a valid option (1 or 2) is selected
+    until [[ "${SERVER_PORT_SETTINGS}" =~ ^[1-2]$ ]]; do
+      # Ask the user to choose a port option, defaulting to 1 (1194)
+      read -rp "Port Choice [1-2]: " -e -i 1 SERVER_PORT_SETTINGS
+    done
+
+    # Set the server port based on the user's choice
+    case ${SERVER_PORT_SETTINGS} in
+    1)
+      # If the user selects option 1, set the port to the default OpenVPN port (1194)
+      SERVER_PORT="1194"
+      # Check if the selected port is already in use for either UDP or TCP
+      if lsof -i UDP:"${SERVER_PORT}" >/dev/null 2>&1 || lsof -i TCP:"${SERVER_PORT}" >/dev/null 2>&1; then
+        # If the port is in use, display an error message and exit the script
+        echo "Error: The port ${SERVER_PORT} is already in use. Please choose a different port."
+        exit
+      fi
+      ;;
+    2)
+      # If the user selects option 2, prompt for a custom port
+      # Continue prompting until a valid port (1–65535) is provided
+      until [[ "${SERVER_PORT}" =~ ^[0-9]+$ ]] && [ "${SERVER_PORT}" -ge 1 ] && [ "${SERVER_PORT}" -le 65535 ]; do
+        # Ask the user to input a custom port number, with 1194 as the default option
+        read -rp "Custom port [1-65535]: " -e -i 1194 SERVER_PORT
+      done
+      # If no input is provided for the custom port, default to 1194
+      if [ -z "${SERVER_PORT}" ]; then
+        SERVER_PORT="1194" # Default port for OpenVPN
+      fi
+      # Check if the chosen custom port is already in use for UDP or TCP
+      if lsof -i UDP:"${SERVER_PORT}" >/dev/null 2>&1 || lsof -i TCP:"${SERVER_PORT}" >/dev/null 2>&1; then
+        # If the custom port is in use, display an error message and exit the script
+        echo "Error: The port ${SERVER_PORT} is already in use. Please choose a different port."
+        exit
+      fi
+      ;;
+    esac
+  }
+
+  # Call the function to execute the OpenVPN port configuration process
+  configure_openvpn_ports
+
 # If oepnvpn config is found than lets manage it using the manager
 else
+
+  # Function to manage OpenVPN service and configuration
+  function openvpn_management() {
+    # Display a list of available actions for the OpenVPN management interface
+    echo "Please select an action:"
+    echo "   1) Display OpenVPN configuration"
+    echo "   2) Start OpenVPN service"
+    echo "   3) Stop OpenVPN service"
+    echo "   4) Restart OpenVPN service"
+    echo "   5) Add a new OpenVPN client"
+    echo "   6) Remove an OpenVPN client"
+    echo "   7) Reinstall OpenVPN service"
+    echo "   8) Uninstall OpenVPN service"
+    echo "   9) Update this management script"
+    echo "   10) Backup OpenVPN configuration"
+    echo "   11) Restore OpenVPN configuration"
+    echo "   12) Update OpenVPN interface IP"
+    echo "   13) Update OpenVPN interface port"
+    echo "   14) Remove all OpenVPN clients"
+    echo "   15) Generate a QR code for OpenVPN configuration"
+    echo "   16) Verify OpenVPN configuration integrity"
+
+    # Keep asking for a valid option until one is selected
+    until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 16 ]; do
+      read -rp "Select an Option [1-16]: " -e -i 0 OPENVPN_OPTIONS
+    done
+
+    # Switch statement to handle the selected action
+    case ${OPENVPN_OPTIONS} in
+    1)
+      # Show the OpenVPN configuration details
+      display_openvpn_config
+      ;;
+    2)
+      # Start the OpenVPN service
+      start_openvpn_service
+      ;;
+    3)
+      # Stop the OpenVPN service
+      stop_openvpn_service
+      ;;
+    4)
+      # Restart the OpenVPN service
+      restart_openvpn_service
+      ;;
+    5)
+      # Add a new OpenVPN client (peer)
+      add_openvpn_client
+      ;;
+    6)
+      # Remove an existing OpenVPN client (peer)
+      remove_openvpn_client
+      ;;
+    7)
+      # Reinstall the OpenVPN service
+      reinstall_openvpn
+      ;;
+    8)
+      # Uninstall the OpenVPN service
+      uninstall_openvpn
+      ;;
+    9)
+      # Update the OpenVPN management script
+      update_openvpn_script
+      ;;
+    10)
+      # Backup the current OpenVPN configuration
+      backup_openvpn_config
+      ;;
+    11)
+      # Restore a previously backed-up OpenVPN configuration
+      restore_openvpn_config
+      ;;
+    12)
+      # Update the OpenVPN interface's IP address
+      update_openvpn_interface_ip
+      ;;
+    13)
+      # Update the OpenVPN interface's listening port
+      update_openvpn_interface_port
+      ;;
+    14)
+      # Remove all OpenVPN clients (peers)
+      remove_all_openvpn_clients
+      ;;
+    15)
+      # Generate a QR code for OpenVPN configuration for clients
+      generate_openvpn_qr_code
+      ;;
+    16)
+      # Verify OpenVPN configurations for integrity and correctness
+      verify_openvpn_configuration
+      ;;
+    esac
+  }
+
+  # Call the OpenVPN management interface function to begin interaction
+  openvpn_management
 
 fi

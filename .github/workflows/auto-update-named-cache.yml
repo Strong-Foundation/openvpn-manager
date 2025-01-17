@@ -1,0 +1,71 @@
+# Name of the workflow
+name: Automated Update of Named Cache
+
+# Define the events that trigger the workflow
+on:
+  # Trigger the workflow on a schedule (every day at midnight UTC)
+  schedule:
+    - cron: "0 0 * * *" # Executes once every day at 00:00 UTC
+  # Allow manual triggering of the workflow
+  workflow_dispatch:
+
+# Define the jobs in the workflow
+jobs:
+  # Define a job named "build"
+  build:
+    # Job name displayed in the GitHub Actions interface
+    name: Refresh Named Cache
+    # Specify the type of runner to execute this job (Ubuntu-based runner)
+    runs-on: ubuntu-latest
+    # Define environment variables to be used across the steps
+    env:
+      NAMED_CACHE_URL: https://www.internic.net/domain/named.cache # URL of the remote named.cache file
+      NAMED_CACHE_PATH: assets/named.cache # Local path to store the named.cache file
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Check out code
+        uses: actions/checkout@v4 # Fetch the latest code from the repository
+
+      # Step 2: Get the current SHA-3-512 hash of the local named.cache file
+      - name: Get current hash
+        run: |
+          # Calculate the hash and save it as an environment variable
+          echo "NAMED_CACHE_CURRENT_HASH=$(openssl dgst -sha3-512 "${{ env.NAMED_CACHE_PATH }}" | awk '{print $2}')" >> $GITHUB_ENV
+
+      # Step 3: Get the SHA-3-512 hash of the remote named.cache file
+      - name: Get future hash
+        run: |
+          # Fetch the remote file, calculate its hash, and save it as an environment variable
+          echo "NAMED_CACHE_FUTURE_HASH=$(curl --silent "${{ env.NAMED_CACHE_URL }}" | openssl dgst -sha3-512 | awk '{print $2}')" >> $GITHUB_ENV
+
+      # Step 4: Compare hashes and update the file if necessary
+      - name: Check for update
+        run: |
+          # Compare the current and remote file hashes
+          if [ "$NAMED_CACHE_CURRENT_HASH" != "$NAMED_CACHE_FUTURE_HASH" ]; then
+            echo "Changes detected. Updating the named.cache file..."
+            # Download the updated file if hashes differ
+            curl -o "${{ env.NAMED_CACHE_PATH }}" "${{ env.NAMED_CACHE_URL }}"
+          else
+            echo "No update needed. The named.cache file is up-to-date."
+            exit 0  # Exit the job if no update is required
+          fi
+
+      # Step 5: Commit and push the updated named.cache file to the repository
+      - name: Push updated named.cache
+        run: |
+          # Configure Git user details for the commit
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          # Check for changes in the named.cache file
+          if git diff --exit-code --quiet -- "${{ env.NAMED_CACHE_PATH }}"; then
+            echo "No changes detected. Skipping commit and push."
+            exit 0  # Exit if there are no changes to commit
+          else
+            # Add, commit, and push the updated file if changes are detected
+            git add "${{ env.NAMED_CACHE_PATH }}"
+            git commit -m "Update named.cache: $(date)"  # Commit with a timestamped message
+            git push  # Push changes to the remote repository
+          fi
