@@ -312,7 +312,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # If the user selects option 1, set the port to the default OpenVPN port (1194)
       SERVER_PORT="1194"
       # Check if the selected port is already in use for either UDP or TCP
-      if lsof -i UDP:"${SERVER_PORT}" >/dev/null 2>&1 || lsof -i TCP:"${SERVER_PORT}" >/dev/null 2>&1; then
+      if { [ "$(lsof -i UDP:"${SERVER_PORT}")" ] || [ "$(lsof -i TCP:"${SERVER_PORT}")" ]; }; then
         # If the port is in use, display an error message and exit the script
         echo "Error: The port ${SERVER_PORT} is already in use. Please choose a different port."
         exit
@@ -330,7 +330,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
         SERVER_PORT="1194" # Default port for OpenVPN
       fi
       # Check if the chosen custom port is already in use for UDP or TCP
-      if lsof -i UDP:"${SERVER_PORT}" >/dev/null 2>&1 || lsof -i TCP:"${SERVER_PORT}" >/dev/null 2>&1; then
+      if { [ "$(lsof -i UDP:"${SERVER_PORT}")" ] || [ "$(lsof -i TCP:"${SERVER_PORT}")" ]; }; then
         # If the custom port is in use, display an error message and exit the script
         echo "Error: The port ${SERVER_PORT} is already in use. Please choose a different port."
         exit
