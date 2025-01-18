@@ -75,6 +75,9 @@ function installing_system_requirements() {
         apt-get install sudo bash coreutils procps-ng kmod -y
       fi
     fi
+  else
+    echo "Error: Your current distribution ${CURRENT_DISTRO} version ${CURRENT_DISTRO_VERSION} is not supported by this script. Please consider updating your distribution or using a supported one."
+    exit
   fi
 }
 
@@ -357,7 +360,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Invoke the function to install either resolvconf or openresolv, depending on the distribution.
   install_resolvconf_or_openresolv
 
-    # Function to allow users to select a custom DNS provider.
+  # Function to allow users to select a custom DNS provider.
   function custom_dns() {
     # If the custom DNS option is enabled, proceed with the DNS selection.
     if [ "${CUSTOM_DNS}" == true ]; then
@@ -437,6 +440,62 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Invoke the custom_dns function to allow the user to select a DNS provider.
   custom_dns
+
+  # Function to prompt for the name of the first OpenVPN client.
+  function client_name() {
+    # If CLIENT_NAME variable is not set, prompt the user for input.
+    if [ -z "${CLIENT_NAME}" ]; then
+      # Display naming rules to the user.
+      echo "Please provide a name for the OpenVPN client. The name should be a single word, without special characters or spaces."
+      # Read the user's input, offering a random string as the default name.
+      read -rp "Client name: " -e -i "$(openssl rand -hex 5)" CLIENT_NAME
+    fi
+    # If no name is provided by the user, assign a random string as the name.
+    if [ -z "${CLIENT_NAME}" ]; then
+      CLIENT_NAME="$(openssl rand -hex 5)"
+    fi
+  }
+
+  # Invoke the function to prompt for the first OpenVPN client's name.
+  client_name
+
+  # Set cipher for the data channel
+  DATA_CHANNEL_CIPHER="AES-256-GCM" # Stronger encryption for the data channel
+  # Set certificate type
+  CERTIFICATE_TYPE="ECDSA" # Secure and efficient certificate type
+  # Set curve for certificate key
+  CERTIFICATE_CURVE="secp521r1" # Strongest curve for ECDSA
+  # Set cipher for the control channel
+  CONTROL_CHANNEL_CIPHER="ECDHE-ECDSA-AES-256-GCM-SHA384" # Strong cipher for control channel
+  # Set Diffie-Hellman key type
+  DIFFIE_HELLMAN_KEY="ECDH" # Secure and efficient Diffie-Hellman key exchange
+  # Set curve for ECDH key
+  ECDH_CURVE="secp521r1" # Strongest ECDH curve for key exchange
+  # Set HMAC digest algorithm
+  HMAC_DIGEST="SHA-512" # Strongest HMAC digest for better security
+  # Set tls-auth or tls-crypt
+  TLS_AUTH_MODE="tls-crypt" # Provides encryption and authentication for control channel
+  #
+  OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH="/etc/openvpn/tls-crypt.key"
+
+  # Function to install openvpn.
+  function install_openvpn() {
+    # Check if required packages are already installed
+    if { [ ! -x "$(command -v openvpn)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ]; }; then
+      # Install required packages depending on the Linux distribution
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+        apt-get update
+        apt-get install ca-certificates gnupg openvpn openssl easy-rsa ca-certificates -y
+      fi
+    fi
+    # Generate the keys
+    openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
+    
+    echo "" >>${OPENVPN_SERVER_CONFIG}
+  }
+
+  # Install openvpn
+  install_openvpn
 
   # Function to install Unbound, a DNS resolver, if required and not already installed.
   function install_unbound() {
@@ -534,43 +593,8 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     fi
   }
 
-  # Function to prompt for the name of the first OpenVPN client.
-  function client_name() {
-    # If CLIENT_NAME variable is not set, prompt the user for input.
-    if [ -z "${CLIENT_NAME}" ]; then
-      # Display naming rules to the user.
-      echo "Please provide a name for the OpenVPN client. The name should be a single word, without special characters or spaces."
-      # Read the user's input, offering a random string as the default name.
-      read -rp "Client name: " -e -i "$(openssl rand -hex 5)" CLIENT_NAME
-    fi
-    # If no name is provided by the user, assign a random string as the name.
-    if [ -z "${CLIENT_NAME}" ]; then
-      CLIENT_NAME="$(openssl rand -hex 5)"
-    fi
-  }
-
-  # Invoke the function to prompt for the first OpenVPN client's name.
-  client_name
-
   # Call the function to install Unbound.
   install_unbound
-
-  # Set cipher for the data channel
-  DATA_CHANNEL_CIPHER="AES-256-GCM" # Stronger encryption for the data channel
-  # Set certificate type
-  CERTIFICATE_TYPE="ECDSA" # Secure and efficient certificate type
-  # Set curve for certificate key
-  CERTIFICATE_CURVE="secp521r1" # Strongest curve for ECDSA
-  # Set cipher for the control channel
-  CONTROL_CHANNEL_CIPHER="ECDHE-ECDSA-AES-256-GCM-SHA384" # Strong cipher for control channel
-  # Set Diffie-Hellman key type
-  DIFFIE_HELLMAN_KEY="ECDH" # Secure and efficient Diffie-Hellman key exchange
-  # Set curve for ECDH key
-  ECDH_CURVE="secp521r1" # Strongest ECDH curve for key exchange
-  # Set HMAC digest algorithm
-  HMAC_DIGEST="SHA-512" # Strongest HMAC digest for better security
-  # Set tls-auth or tls-crypt
-  TLS_AUTH_MODE="tls-crypt" # Provides encryption and authentication for control channel
 
 # If oepnvpn config is found than lets manage it using the manager
 else
