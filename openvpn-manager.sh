@@ -490,8 +490,30 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     fi
     # Generate the keys
     openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
-    
-    echo "" >>${OPENVPN_SERVER_CONFIG}
+
+    # OpenVPN Configuration
+    OPEN_VPN_SERVER_CONFIG="port ${SERVER_PORT}
+proto ${PRIMARY_PROTOCOL}
+dev tun
+persist-key
+persist-tun
+keepalive 10 120
+topology subnet
+server 10.8.0.0 255.255.255.0
+server-ipv6 fd42:42:42:42::/112
+push "dhcp-option DNS 1.1.1.1"
+push "dhcp-option DNS 1.0.0.1"
+push "redirect-gateway def1 bypass-dhcp"
+ca /etc/openvpn/easy-rsa/keys/ca.crt
+cert /etc/openvpn/easy-rsa/keys/server.crt
+key /etc/openvpn/easy-rsa/keys/server.key
+dh /etc/openvpn/easy-rsa/keys/dh.pem
+tls-auth /etc/openvpn/easy-rsa/keys/ta.key 0"
+
+    # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
+
+    # Put the config in the file.
+    echo ${OPEN_VPN_SERVER_CONFIG} >${OPENVPN_SERVER_CONFIG}
   }
 
   # Install openvpn
