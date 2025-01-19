@@ -513,7 +513,7 @@ tls-auth /etc/openvpn/easy-rsa/keys/ta.key 0"
     # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
 
     # Put the config in the file.
-    echo ${OPEN_VPN_SERVER_CONFIG} >${OPENVPN_SERVER_CONFIG}
+    echo -e "${OPEN_VPN_SERVER_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CONFIG}
   }
 
   # Install openvpn
