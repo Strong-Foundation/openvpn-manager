@@ -150,10 +150,12 @@ check_disk_space
 CURRENT_FILE_PATH=$(realpath "${0}")
 # Set the TUN_PATH variable to the path of the TUN device
 LOCAL_TUN_PATH="/dev/net/tun"
-# Set the path to the oepnvpn server directory
+# Set the path to the opnevpn server directory
 OPENVPN_SERVER_DIRECTORY="/etc/openvpn"
+# Set the path to the opnevpn server client directory
+OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_SERVER_DIRECTORY}/clients"
 # Set the path to the openvpn server config
-OPENVPN_SERVER_CONFIG=${OPENVPN_SERVER_DIRECTORY}"/server.conf"
+OPENVPN_SERVER_CONFIG="${OPENVPN_SERVER_DIRECTORY}/server.conf"
 
 # Define the function check_local_tun
 function check_local_tun() {
