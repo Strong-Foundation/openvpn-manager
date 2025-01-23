@@ -54,9 +54,8 @@ function system_information() {
     # If /etc/os-release file is present, source it to obtain system details
     # shellcheck source=/dev/null
     source /etc/os-release
-    CURRENT_DISTRO=${ID}                                                                              # CURRENT_DISTRO holds the system's ID
-    CURRENT_DISTRO_VERSION=${VERSION_ID}                                                              # CURRENT_DISTRO_VERSION holds the system's VERSION_ID
-    CURRENT_DISTRO_MAJOR_VERSION=$(echo "${CURRENT_DISTRO_VERSION}" | cut --delimiter="." --fields=1) # CURRENT_DISTRO_MAJOR_VERSION holds the major version of the system (e.g., "16" for Ubuntu 16.04)
+    CURRENT_DISTRO=${ID}                 # CURRENT_DISTRO holds the system's ID
+    CURRENT_DISTRO_VERSION=${VERSION_ID} # CURRENT_DISTRO_VERSION holds the system's VERSION_ID
   fi
 }
 
@@ -68,11 +67,11 @@ function installing_system_requirements() {
   # Check if the current Linux distribution is supported
   if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
     # Check if required packages are already installed
-    if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ]; }; then
+    if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v sudo)" ] || [ ! -x "$(command -v bash)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ] || [ ! -x "$(command -v systemd-detect-virt)" ] || [ ! -x "$(command -v ps)" ] || [ ! -x "$(command -v lsof)" ]; }; then
       # Install required packages depending on the Linux distribution
       if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
         apt-get update
-        apt-get install sudo bash coreutils procps-ng kmod -y
+        apt-get install curl sudo bash coreutils jq iproute2 systemd procps lsof -y
       fi
     fi
   else
@@ -534,12 +533,12 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # Install required packages depending on the Linux distribution
       if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
         apt-get update
-        apt-get install ca-certificates gnupg openvpn openssl easy-rsa ca-certificates -y
+        apt-get install ca-certificates gnupg openvpn openssl easy-rsa -y
       fi
     fi
     # Generate the keys
     openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
-    
+
     echo "" >>${OPENVPN_SERVER_CONFIG}
   }
 
