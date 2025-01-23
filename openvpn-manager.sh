@@ -362,6 +362,53 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Invoke the function to install either resolvconf or openresolv, depending on the distribution.
   install_resolvconf_or_openresolv
 
+  # Function to prompt the user for their preferred DNS provider.
+  function ask_install_dns() {
+    # Display the DNS provider options to the user.
+    echo "Which DNS provider would you like to use?"
+    echo "  1) Unbound (Recommended)"
+    echo "  2) Custom (Advanced)"
+    # Continue prompting until the user enters a valid choice (1 or 2).
+    until [[ "${DNS_PROVIDER_SETTINGS}" =~ ^[1-2]$ ]]; do
+      # Read the user's DNS provider choice and store it in DNS_PROVIDER_SETTINGS.
+      read -rp "DNS provider [1-2]:" -e -i 1 DNS_PROVIDER_SETTINGS
+    done
+    # Set variables based on the user's DNS provider choice.
+    case ${DNS_PROVIDER_SETTINGS} in
+    1)
+      # If the user chose Unbound, set INSTALL_UNBOUND to true.
+      INSTALL_UNBOUND=true
+      # Ask the user if they want to install a content-blocker.
+      echo "Do you want to prevent advertisements, tracking, malware, and phishing using the content-blocker?"
+      echo "  1) Yes (Recommended)"
+      echo "  2) No"
+      # Continue prompting until the user enters a valid choice (1 or 2).
+      until [[ "${CONTENT_BLOCKER_SETTINGS}" =~ ^[1-2]$ ]]; do
+        # Read the user's content blocker choice and store it in CONTENT_BLOCKER_SETTINGS.
+        read -rp "Content Blocker Choice [1-2]:" -e -i 1 CONTENT_BLOCKER_SETTINGS
+      done
+      # Set INSTALL_BLOCK_LIST based on the user's content blocker choice.
+      case ${CONTENT_BLOCKER_SETTINGS} in
+      1)
+        # If the user chose to install the content blocker, set INSTALL_BLOCK_LIST to true.
+        INSTALL_BLOCK_LIST=true
+        ;;
+      2)
+        # If the user chose not to install the content blocker, set INSTALL_BLOCK_LIST to false.
+        INSTALL_BLOCK_LIST=false
+        ;;
+      esac
+      ;;
+    2)
+      # If the user chose to use a custom DNS provider, set CUSTOM_DNS to true.
+      CUSTOM_DNS=true
+      ;;
+    esac
+  }
+
+  # Invoke the ask_install_dns function to begin the DNS provider selection process.
+  ask_install_dns
+
   # Function to allow users to select a custom DNS provider.
   function custom_dns() {
     # If the custom DNS option is enabled, proceed with the DNS selection.
