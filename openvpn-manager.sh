@@ -54,9 +54,8 @@ function system_information() {
     # If /etc/os-release file is present, source it to obtain system details
     # shellcheck source=/dev/null
     source /etc/os-release
-    CURRENT_DISTRO=${ID}                                                                              # CURRENT_DISTRO holds the system's ID
-    CURRENT_DISTRO_VERSION=${VERSION_ID}                                                              # CURRENT_DISTRO_VERSION holds the system's VERSION_ID
-    CURRENT_DISTRO_MAJOR_VERSION=$(echo "${CURRENT_DISTRO_VERSION}" | cut --delimiter="." --fields=1) # CURRENT_DISTRO_MAJOR_VERSION holds the major version of the system (e.g., "16" for Ubuntu 16.04)
+    CURRENT_DISTRO=${ID}                 # CURRENT_DISTRO holds the system's ID
+    CURRENT_DISTRO_VERSION=${VERSION_ID} # CURRENT_DISTRO_VERSION holds the system's VERSION_ID
   fi
 }
 
@@ -68,11 +67,11 @@ function installing_system_requirements() {
   # Check if the current Linux distribution is supported
   if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
     # Check if required packages are already installed
-    if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ]; }; then
+    if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v sudo)" ] || [ ! -x "$(command -v bash)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ] || [ ! -x "$(command -v systemd-detect-virt)" ] || [ ! -x "$(command -v ps)" ] || [ ! -x "$(command -v lsof)" ]; }; then
       # Install required packages depending on the Linux distribution
       if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
         apt-get update
-        apt-get install sudo bash coreutils procps-ng kmod -y
+        apt-get install curl sudo bash coreutils jq iproute2 systemd procps lsof -y
       fi
     fi
   else
@@ -150,10 +149,12 @@ check_disk_space
 CURRENT_FILE_PATH=$(realpath "${0}")
 # Set the TUN_PATH variable to the path of the TUN device
 LOCAL_TUN_PATH="/dev/net/tun"
-# Set the path to the oepnvpn server directory
+# Set the path to the opnevpn server directory
 OPENVPN_SERVER_DIRECTORY="/etc/openvpn"
+# Set the path to the opnevpn server client directory
+OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_SERVER_DIRECTORY}/clients"
 # Set the path to the openvpn server config
-OPENVPN_SERVER_CONFIG=${OPENVPN_SERVER_DIRECTORY}"/server.conf"
+OPENVPN_SERVER_CONFIG="${OPENVPN_SERVER_DIRECTORY}/server.conf"
 
 # Define the function check_local_tun
 function check_local_tun() {
@@ -360,6 +361,53 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Invoke the function to install either resolvconf or openresolv, depending on the distribution.
   install_resolvconf_or_openresolv
 
+  # Function to prompt the user for their preferred DNS provider.
+  function ask_install_dns() {
+    # Display the DNS provider options to the user.
+    echo "Which DNS provider would you like to use?"
+    echo "  1) Unbound (Recommended)"
+    echo "  2) Custom (Advanced)"
+    # Continue prompting until the user enters a valid choice (1 or 2).
+    until [[ "${DNS_PROVIDER_SETTINGS}" =~ ^[1-2]$ ]]; do
+      # Read the user's DNS provider choice and store it in DNS_PROVIDER_SETTINGS.
+      read -rp "DNS provider [1-2]:" -e -i 1 DNS_PROVIDER_SETTINGS
+    done
+    # Set variables based on the user's DNS provider choice.
+    case ${DNS_PROVIDER_SETTINGS} in
+    1)
+      # If the user chose Unbound, set INSTALL_UNBOUND to true.
+      INSTALL_UNBOUND=true
+      # Ask the user if they want to install a content-blocker.
+      echo "Do you want to prevent advertisements, tracking, malware, and phishing using the content-blocker?"
+      echo "  1) Yes (Recommended)"
+      echo "  2) No"
+      # Continue prompting until the user enters a valid choice (1 or 2).
+      until [[ "${CONTENT_BLOCKER_SETTINGS}" =~ ^[1-2]$ ]]; do
+        # Read the user's content blocker choice and store it in CONTENT_BLOCKER_SETTINGS.
+        read -rp "Content Blocker Choice [1-2]:" -e -i 1 CONTENT_BLOCKER_SETTINGS
+      done
+      # Set INSTALL_BLOCK_LIST based on the user's content blocker choice.
+      case ${CONTENT_BLOCKER_SETTINGS} in
+      1)
+        # If the user chose to install the content blocker, set INSTALL_BLOCK_LIST to true.
+        INSTALL_BLOCK_LIST=true
+        ;;
+      2)
+        # If the user chose not to install the content blocker, set INSTALL_BLOCK_LIST to false.
+        INSTALL_BLOCK_LIST=false
+        ;;
+      esac
+      ;;
+    2)
+      # If the user chose to use a custom DNS provider, set CUSTOM_DNS to true.
+      CUSTOM_DNS=true
+      ;;
+    esac
+  }
+
+  # Invoke the ask_install_dns function to begin the DNS provider selection process.
+  ask_install_dns
+
   # Function to allow users to select a custom DNS provider.
   function custom_dns() {
     # If the custom DNS option is enabled, proceed with the DNS selection.
@@ -485,7 +533,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # Install required packages depending on the Linux distribution
       if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
         apt-get update
-        apt-get install ca-certificates gnupg openvpn openssl easy-rsa ca-certificates -y
+        apt-get install ca-certificates gnupg openvpn openssl easy-rsa -y
       fi
     fi
     # Generate the keys
@@ -524,6 +572,19 @@ tls-auth /etc/openvpn/easy-rsa/keys/ta.key 0"
     # If INSTALL_UNBOUND is true and Unbound is not installed, proceed with installation.
     if [ "${INSTALL_UNBOUND}" == true ]; then
       if [ ! -x "$(command -v unbound)" ]; then
+        # Check if the root hints file does not exist.
+        if [ ! -f ${UNBOUND_ROOT_HINTS} ]; then
+          # If the root hints file is missing, download it from the specified URL.
+          LOCAL_UNBOUND_ROOT_HINTS_COPY=$(curl "${UNBOUND_ROOT_SERVER_CONFIG_URL}")
+        fi
+        # Check if we are install unbound blocker
+        if [ "${INSTALL_BLOCK_LIST}" == true ]; then
+          # Check if the block list file does not exist.
+          if [ ! -f ${UNBOUND_CONFIG_HOST} ]; then
+            # If the block list file is missing, download it from the specified URL.
+            LOCAL_UNBOUND_BLOCKLIST_COPY=$(curl "${UNBOUND_CONFIG_HOST_URL}" | awk '{print "local-zone: \""$1"\" always_refuse"}')
+          fi
+        fi
         # Installation commands for Unbound vary based on the Linux distribution.
         # The following checks the distribution and installs Unbound accordingly.
         # For Debian-based distributions:
@@ -539,10 +600,10 @@ tls-auth /etc/openvpn/easy-rsa/keys/ta.key 0"
           fi
         fi
       fi
-      # Configure Unbound using anchor and root hints.
+      # Configure Unbound to use the auto-trust-anchor-file.
       unbound-anchor -a ${UNBOUND_ANCHOR}
-      # Download root hints.
-      curl "${UNBOUND_ROOT_SERVER_CONFIG_URL}" --create-dirs -o ${UNBOUND_ROOT_HINTS}
+      # Configure Unbound to use the root hints file.
+      printf "%s" "${LOCAL_UNBOUND_ROOT_HINTS_COPY}" >${UNBOUND_ROOT_HINTS}
       # Configure Unbound settings.
       # The settings are stored in a temporary variable and then written to the Unbound configuration file.
       # If INSTALL_BLOCK_LIST is true, include a block list in the Unbound configuration.
@@ -589,13 +650,23 @@ tls-auth /etc/openvpn/easy-rsa/keys/ta.key 0"
 \tqname-minimisation: yes
 \tprefetch-key: yes"
       echo -e "${UNBOUND_TEMP_INTERFACE_INFO}" | awk '!seen[$0]++' >${UNBOUND_CONFIG}
-      # Configure block list if INSTALL_BLOCK_LIST is true.
+      # Check if we are installing a block list.
       if [ "${INSTALL_BLOCK_LIST}" == true ]; then
+        # Include the block list in the Unbound configuration.
         echo -e "\tinclude: ${UNBOUND_CONFIG_HOST}" >>${UNBOUND_CONFIG}
+      fi
+      # If INSTALL_BLOCK_LIST is true, make the unbound directory.
+      if [ "${INSTALL_BLOCK_LIST}" == true ]; then
+        # If the Unbound configuration directory does not exist, create it.
         if [ ! -d "${UNBOUND_CONFIG_DIRECTORY}" ]; then
+          # Create the Unbound configuration directory.
           mkdir --parents "${UNBOUND_CONFIG_DIRECTORY}"
         fi
-        curl "${UNBOUND_CONFIG_HOST_URL}" | awk '{print "local-zone: \""$1"\" always_refuse"}' >${UNBOUND_CONFIG_HOST}
+      fi
+      # If the block list is enabled, configure Unbound to use the block list.
+      if [ "${INSTALL_BLOCK_LIST}" == true ]; then
+        # Write the block list to the Unbound configuration block file.
+        printf "%s" "${LOCAL_UNBOUND_BLOCKLIST_COPY}" >${UNBOUND_CONFIG_HOST}
       fi
       # Update ownership of Unbound's root directory.
       chown --recursive "${USER}":"${USER}" ${UNBOUND_ROOT}

@@ -66,6 +66,50 @@ The UI will guide you through various management tasks, including:
 
 - **VPN Not Connecting:** If you face connection issues, check that the OpenVPN service is running and that the configuration is correct.
 
+## 📐 Architecture
+
+```mermaid
+graph LR
+  %% VPN Client Devices (Direct Connection)
+  subgraph "VPN Client Devices"
+    phone[Phone - OpenVPN Client]
+    laptop[Laptop - OpenVPN Client]
+  end
+
+  %% Local Network Devices Connecting Through Router
+  subgraph "Local Network Devices"
+    localWatch[Watch] -->|Sends Traffic to Local Router| localRouter[Local Router With OpenVPN]
+    localSmartTV[Smart TV] -->|Sends Traffic to Local Router| localRouter
+    localRouter
+  end
+
+  %% Internet Block
+  subgraph "Internet"
+    internet -->|"Sends Encrypted Traffic to VPN Server"| vpnServer[OpenVPN VPN Server]
+  end
+
+  %% OpenVPN VPN Server - Processing Encrypted Traffic
+  subgraph "OpenVPN VPN Server"
+    vpnServer -->|Decrypts Traffic| openvpnVPN[VPN Traffic Processor]
+    openvpnVPN -->|Handles DNS Requests| dnsServer[DNS Server]
+    firewall[Firewall] -->|Filters Incoming/Outgoing Traffic| openvpnVPN
+    router[Router] -->|Performs NAT for VPN Traffic| openvpnVPN
+    openvpnVPN -->|Routes Decrypted Traffic to Destination| internetDestination["Internet Destination"]
+  end
+
+  %% Internet Destination - Services Handling Requests
+  subgraph "Internet Destination"
+    internetDestination -->|Routes Traffic to Services| destinationServices[Destination Servers]
+  end
+
+  %% Connections to the Internet
+  internet
+  vpnServer
+  localRouter -->|"Encrypts Traffic and Sends to Internet"| internet
+  laptop -->|"Encrypts Traffic and Sends to Internet"| internet
+  phone -->|"Encrypts Traffic and Sends to Internet"| internet
+```
+
 ## Contributing
 
 We welcome contributions! If you have any suggestions or bug fixes, feel free to fork the repository, create a new branch, and submit a pull request.

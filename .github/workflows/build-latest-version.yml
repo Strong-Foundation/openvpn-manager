@@ -1,0 +1,37 @@
+# Workflow to construct the most recent release with OpenVPN Manager
+name: Construct Most Recent Release
+
+# Define the events that trigger the workflow
+on:
+  # Trigger the workflow on push for .sh files
+  push:
+    paths:
+      - "**.sh"
+  # Trigger the workflow on pull request for .sh files
+  pull_request:
+    paths:
+      - "**.sh"
+  # Allow manual triggering of the workflow
+  workflow_dispatch:
+
+# Define the jobs in the workflow
+jobs:
+  # Job to build and test OpenVPN Manager
+  build:
+    # Display name of the job
+    name: Build on Ubuntu
+    # Use the latest Ubuntu runner
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Check out Repository Code
+        uses: actions/checkout@v4
+
+      # Step 2: Install required tools
+      - name: Install Required Tools
+        run: apt-get update && apt-get install sudo bash curl -y
+
+      # Step 3: Install OpenVPN Manager
+      - name: Install OpenVPN Manager
+        run: sudo bash openvpn-manager.sh
