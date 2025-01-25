@@ -201,6 +201,115 @@ function get_network_information() {
   fi
 }
 
+function usage_guide() {
+  echo "Usage: ./$(basename "${0}") <command>"
+  echo "  --install     Installs the OpenVPN service on your system"
+  echo "  --start       Starts the OpenVPN service if it's not already running"
+  echo "  --stop        Stops the OpenVPN service if it's currently running"
+  echo "  --restart     Restarts the OpenVPN service"
+  echo "  --list        Lists all active OpenVPN connections"
+  echo "  --add         Adds a new client configuration to the OpenVPN server"
+  echo "  --remove      Removes a specified client from the OpenVPN server"
+  echo "  --reinstall   Reinstalls the OpenVPN service, keeping the current configuration"
+  echo "  --uninstall   Uninstalls the OpenVPN service from your system"
+  echo "  --update      Updates the OpenVPN Manager to the latest version"
+  echo "  --backup      Creates a backup of your current OpenVPN configuration"
+  echo "  --restore     Restores the OpenVPN configuration from a previous backup"
+  echo "  --purge       Removes all client configurations from the OpenVPN server"
+  echo "  --help        Displays this usage guide"
+}
+
+function usage() {
+  # Check if there are any command line arguments left
+  while [ $# -ne 0 ]; do
+    # Use a switch-case statement to check the value of the first argument
+    case ${1} in
+    --install) # If it's "--install", set the variable HEADLESS_INSTALL to "true"
+      shift
+      HEADLESS_INSTALL=${HEADLESS_INSTALL=true}
+      ;;
+    --start) # If it's "--start", set the variable OPENVPN_OPTIONS to 2
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=2}
+      ;;
+    --stop) # If it's "--stop", set the variable OPENVPN_OPTIONS to 3
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=3}
+      ;;
+    --restart) # If it's "--restart", set the variable OPENVPN_OPTIONS to 4
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=4}
+      ;;
+    --list) # If it's "--list", set the variable OPENVPN_OPTIONS to 1
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=1}
+      ;;
+    --add) # If it's "--add", set the variable OPENVPN_OPTIONS to 5
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=5}
+      ;;
+    --remove) # If it's "--remove", set the variable OPENVPN_OPTIONS to 6
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=6}
+      ;;
+    --reinstall) # If it's "--reinstall", set the variable OPENVPN_OPTIONS to 7
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=7}
+      ;;
+    --uninstall) # If it's "--uninstall", set the variable OPENVPN_OPTIONS to 8
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=8}
+      ;;
+    --update) # If it's "--update", set the variable OPENVPN_OPTIONS to 9
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=9}
+      ;;
+    --backup) # If it's "--backup", set the variable OPENVPN_OPTIONS to 10
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=10}
+      ;;
+    --restore) # If it's "--restore", set the variable OPENVPN_OPTIONS to 11
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=11}
+      ;;
+    --purge) # If it's "--purge", set the variable OPENVPN_OPTIONS to 14
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=14}
+      ;;
+    --help) # If it's "--help", call the function usage_guide
+      shift
+      usage_guide
+      ;;
+    *) # If it's anything else, print an error message and call the function usage_guide, then exit
+      echo "Invalid argument: ${1}"
+      usage_guide
+      exit
+      ;;
+    esac
+  done
+}
+
+# Call the function usage with all the command line arguments
+usage "$@"
+
+# The function defines default values for configuration variables when installing OpenVPN in headless mode.
+# These variables include private subnet settings, server host settings, NAT choice, port settings, MTU settings, client configuration options, automatic updates, automatic backups, DNS provider settings, content blocker settings, client name, and automatic configuration removal.
+function headless_install() {
+  # If headless installation is specified, set default values for configuration variables.
+  if [ "${HEADLESS_INSTALL}" == true ]; then
+    SERVER_HOST_V4_SETTINGS=${SERVER_HOST_V4_SETTINGS=1}   # Default to 1 (IPv4)
+    SERVER_HOST_V6_SETTINGS=${SERVER_HOST_V6_SETTINGS=1}   # Default to 1 (IPv6)
+    PROTOCOL_CHOICE=${PROTOCOL_CHOICE=1}                   # Default to 1 (UDP as primary, TCP as secondary)
+    SERVER_PORT_SETTINGS=${SERVER_PORT_SETTINGS=1}         # Default to 1 (1194)
+    DNS_PROVIDER_SETTINGS=${DNS_PROVIDER_SETTINGS=1}       # Default to 1 (Unbound)
+    CONTENT_BLOCKER_SETTINGS=${CONTENT_BLOCKER_SETTINGS=1} # Default to 1 (Yes)
+    CLIENT_NAME=${CLIENT_NAME}                             # Set the client name
+  fi
+}
+
+# Call the headless_install function to set default values for configuration variables in headless mode.
+headless_install
+
 # Set up the openvpn, if config it isn't already there.
 if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
