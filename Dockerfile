@@ -20,7 +20,8 @@ EXPOSE 1194/udp
 # Run the OpenVPN manager script
 RUN bash /usr/local/bin/openvpn-manager.sh --install
 
-
+# Sleep to keep the container running
+CMD ["sleep", "infinity"]
 
 # Build the cointainer
 # docker build -t openvpn-manager .

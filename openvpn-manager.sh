@@ -183,7 +183,7 @@ function check_local_tun() {
 }
 
 # Call the check_local_tun function to check for the TUN device
-check_local_tun
+# check_local_tun
 
 # This is a Bash function named "get_network_information" that retrieves network information.
 function get_network_information() {
