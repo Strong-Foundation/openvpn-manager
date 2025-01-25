@@ -155,6 +155,18 @@ OPENVPN_SERVER_DIRECTORY="/etc/openvpn"
 OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_SERVER_DIRECTORY}/clients"
 # Set the path to the openvpn server config
 OPENVPN_SERVER_CONFIG="${OPENVPN_SERVER_DIRECTORY}/server.conf"
+# Set the path to the openvpn server certificate authority
+OPENVPN_SERVER_CERTIFICATE_AUTHORITY="/etc/openvpn/server/ca.crt"
+# Set the path to the openvpn server certificate authority key
+OPENVPN_SERVER_CERTIFICATE_AUTHORITY_KEY="/etc/openvpn/server/ca.key"
+# Set the path to the openvpn server diffie Hellman parameters file
+OPENVPN_SERVER_DIFFIE_HELLMAN_PARAMETERS="/etc/openvpn/server/dh.pem"
+# Set the path to the openvpn server ssl certificate
+OPENVPN_SERVER_SSL_CERTIFICATE="/etc/openvpn/server/server.crt"
+# Set the path to the openvpn server ssl key
+OPENVPN_SERVER_SSL_KEY="/etc/openvpn/server/server.key"
+# Set the path to the openvpn server tls-crypt key
+OPENVPN_SERVER_TLS_CRYPT_KEY="/etc/openvpn/server/tls-crypt.key"
 
 # Define the function check_local_tun
 function check_local_tun() {
@@ -388,19 +400,19 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Set the protocols based on the user's choice
     case ${PROTOCOL_CHOICE} in
     1)
-      PRIMARY_PROTOCOL="UDP"
-      SECONDARY_PROTOCOL="TCP"
+      PRIMARY_PROTOCOL="UDP6"
+      SECONDARY_PROTOCOL="TCP6"
       ;;
     2)
-      PRIMARY_PROTOCOL="TCP"
-      SECONDARY_PROTOCOL="UDP"
+      PRIMARY_PROTOCOL="TCP6"
+      SECONDARY_PROTOCOL="UDP6"
       ;;
     3)
-      PRIMARY_PROTOCOL="UDP"
+      PRIMARY_PROTOCOL="UDP6"
       SECONDARY_PROTOCOL="none"
       ;;
     4)
-      PRIMARY_PROTOCOL="TCP"
+      PRIMARY_PROTOCOL="TCP6"
       SECONDARY_PROTOCOL="none"
       ;;
     esac
@@ -616,44 +628,6 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Invoke the function to prompt for the first OpenVPN client's name.
   client_name
 
-  # Set cipher for the data channel
-  DATA_CHANNEL_CIPHER="AES-256-GCM" # Stronger encryption for the data channel
-  # Set certificate type
-  CERTIFICATE_TYPE="ECDSA" # Secure and efficient certificate type
-  # Set curve for certificate key
-  CERTIFICATE_CURVE="secp521r1" # Strongest curve for ECDSA
-  # Set cipher for the control channel
-  CONTROL_CHANNEL_CIPHER="ECDHE-ECDSA-AES-256-GCM-SHA384" # Strong cipher for control channel
-  # Set Diffie-Hellman key type
-  DIFFIE_HELLMAN_KEY="ECDH" # Secure and efficient Diffie-Hellman key exchange
-  # Set curve for ECDH key
-  ECDH_CURVE="secp521r1" # Strongest ECDH curve for key exchange
-  # Set HMAC digest algorithm
-  HMAC_DIGEST="SHA-512" # Strongest HMAC digest for better security
-  # Set tls-auth or tls-crypt
-  TLS_AUTH_MODE="tls-crypt" # Provides encryption and authentication for control channel
-  #
-  OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH="/etc/openvpn/tls-crypt.key"
-
-  # Function to install openvpn.
-  function install_openvpn() {
-    # Check if required packages are already installed
-    if { [ ! -x "$(command -v openvpn)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ]; }; then
-      # Install required packages depending on the Linux distribution
-      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
-        apt-get update
-        apt-get install ca-certificates gnupg openvpn openssl easy-rsa -y
-      fi
-    fi
-    # Generate the keys
-    openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
-
-    echo "" >>${OPENVPN_SERVER_CONFIG}
-  }
-
-  # Install openvpn
-  install_openvpn
-
   # Function to install Unbound, a DNS resolver, if required and not already installed.
   function install_unbound() {
     # If INSTALL_UNBOUND is true and Unbound is not installed, proceed with installation.
@@ -775,6 +749,135 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Call the function to install Unbound.
   install_unbound
+
+  # Set cipher for the data channel
+  DATA_CHANNEL_CIPHER="AES-256-GCM" # Stronger encryption for the data channel
+  # Set certificate type
+  CERTIFICATE_TYPE="ECDSA" # Secure and efficient certificate type
+  # Set curve for certificate key
+  CERTIFICATE_CURVE="secp521r1" # Strongest curve for ECDSA
+  # Set cipher for the control channel
+  CONTROL_CHANNEL_CIPHER="ECDHE-ECDSA-AES-256-GCM-SHA384" # Strong cipher for control channel
+  # Set Diffie-Hellman key type
+  DIFFIE_HELLMAN_KEY="ECDH" # Secure and efficient Diffie-Hellman key exchange
+  # Set curve for ECDH key
+  ECDH_CURVE="secp521r1" # Strongest ECDH curve for key exchange
+  # Set HMAC digest algorithm
+  HMAC_DIGEST="SHA-512" # Strongest HMAC digest for better security
+  # Set tls-auth or tls-crypt
+  TLS_AUTH_MODE="tls-crypt" # Provides encryption and authentication for control channel
+
+  # Function to install openvpn.
+  function install_openvpn() {
+    # Check if required packages are already installed
+    if { [ ! -x "$(command -v openvpn)" ] || [ ! -x "$(command -v openssl)" ] || [ ! -x "$(command -v gpg)" ] || [ ! -x "$(command -v ip)" ]; }; then
+      # Install required packages depending on the Linux distribution
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+        apt-get update
+        apt-get instal openvpn openssl gnupg ca-certificates easy-rsa -y
+      fi
+    fi
+    # Generate the keys
+    openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
+
+    # Create the OpenVPN server configuration file with the specified settings.
+    OPEN_VPN_SERVER_CONFIG="
+# Listen on all available network interfaces (0.0.0.0) for incoming connections.
+local 0.0.0.0
+
+# Set the port for OpenVPN to listen on (e.g., 1194).
+port ${SERVER_PORT}
+
+# Set the protocol for OpenVPN to use (e.g., udp or tcp).
+proto ${PRIMARY_PROTOCOL}
+
+# dev tun - routed IP tunnel (e.g., tun), dev tap - ethernet bridge tunnel (e.g., tap)
+dev tun
+
+# Path to the Certificate Authority (CA) certificate
+ca /etc/openvpn/server/ca.crt
+
+# Path to the server's SSL certificate
+cert /etc/openvpn/easy-rsa/keys/server.crt
+
+# Path to the server's private key
+key /etc/openvpn/easy-rsa/keys/server.key
+
+# Path to the Diffie-Hellman parameters for key exchange
+dh /etc/openvpn/easy-rsa/keys/dh.pem
+
+# Path to the TLS authentication key (for added security)
+tls-auth /etc/openvpn/easy-rsa/keys/ta.key
+
+# Verify the certificate revocation list (CRL) using the specified crl.pem file to check for revoked certificates
+crl-verify crl.pem
+
+# The keepalive directive sends ping messages every 10 seconds and considers the remote peer down if no ping is received within 120 seconds.
+keepalive 10 120
+
+# Disable compression to avoid the VORACLE attack
+compress disable
+
+# Use AES-256-GCM for encryption, a fast and secure authenticated encryption cipher.
+cipher AES-256-GCM
+
+# Set the elliptic curve Diffie-Hellman (ECDH) curve to prime256v1 for key exchange
+ecdh-curve prime256v1
+
+# Set the HMAC (hash-based message authentication code) algorithm to SHA256 for message integrity
+auth SHA256
+
+# Enable TLS server mode, where the OpenVPN server performs the TLS handshake
+tls-server
+
+# Set the minimum required TLS version to 1.3 for stronger encryption and security
+tls-version-min 1.3
+
+# Keep the keys intact across restarts to avoid re-negotiating them
+persist-key
+
+# Keep the tunnel interface open across restarts to avoid recreating it
+persist-tun
+
+# Set the topology to \"subnet\" for a routed VPN network, where each client gets its own IP address in the network
+topology subnet
+
+# Enable IPv6 support on the tunnel interface
+tun-ipv6
+
+# Push the IPv6 configuration to connected clients
+push tun-ipv6
+
+# Define the IPv4 subnet and netmask for the VPN server to assign client IP addresses
+server 10.0.0.0 255.0.0.0
+
+# Define the IPv6 subnet for the VPN server to assign client IPv6 addresses
+server-ipv6 fd00:00:00::0/8
+
+# Push the primary DNS server to clients (changeable via the DNS_PRIMARY variable).
+push \"dhcp-option DNS ${DNS_PRIMARY}\"
+
+# Push the secondary DNS server to clients (changeable via the DNS_SECONDARY variable).
+push \"dhcp-option DNS ${DNS_SECONDARY}\"
+
+# Redirect all client traffic through the VPN while bypassing local DHCP traffic.
+push \"redirect-gateway def1 bypass-dhcp\"
+
+# Push a route for the IPv6 network 2000::/3 to the client, covering all globally routable IPv6 addresses
+push \"route-ipv6 2000::/3\"
+
+# Push a directive to redirect all client IPv6 traffic through the VPN gateway
+push \"redirect-gateway ipv6\"
+"
+
+    # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
+
+    # Put the config in the file.
+    echo -e "${OPEN_VPN_SERVER_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CONFIG}
+  }
+
+  # Install openvpn
+  install_openvpn
 
 # If oepnvpn config is found than lets manage it using the manager
 else
