@@ -151,6 +151,10 @@ CURRENT_FILE_PATH=$(realpath "${0}")
 LOCAL_TUN_PATH="/dev/net/tun"
 # Set the path to the opnevpn server directory
 OPENVPN_SERVER_DIRECTORY="/etc/openvpn"
+# Set the path to the openvpn easy-rsa directory
+OPENVPN_SERVER_EASY_RSA_DIRECTORY="${OPENVPN_SERVER_DIRECTORY}/easy-rsa"
+# Set the path to the openvpn server easy-rsa variables file
+OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE="${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars"
 # Set the path to the opnevpn server client directory
 OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_SERVER_DIRECTORY}/clients"
 # Set the path to the openvpn server config
@@ -774,9 +778,15 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # Install required packages depending on the Linux distribution
       if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
         apt-get update
-        apt-get instal openvpn openssl gnupg ca-certificates easy-rsa -y
+        apt-get install openvpn openssl gnupg ca-certificates easy-rsa -y
       fi
     fi
+
+    # Create the easy-rsa directory if it doesn't exist.
+    if [ ! -d "${OPENVPN_SERVER_EASY_RSA_DIRECTORY}" ]; then
+      make-cadir ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
+    fi
+
     # Generate the keys
     openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
 
@@ -786,10 +796,10 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 local 0.0.0.0
 
 # Set the port for OpenVPN to listen on (e.g., 1194).
-port ${SERVER_PORT}
+port 1194
 
 # Set the protocol for OpenVPN to use (e.g., udp or tcp).
-proto ${PRIMARY_PROTOCOL}
+proto udp6
 
 # dev tun - routed IP tunnel (e.g., tun), dev tap - ethernet bridge tunnel (e.g., tap)
 dev tun
