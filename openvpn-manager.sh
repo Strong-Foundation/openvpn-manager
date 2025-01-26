@@ -788,7 +788,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       make-cadir ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
       # Fix the Easy-RSA configuration variables in the vars file.
       # Uncomments and sets the EASYRSA variable to the directory containing Easy-RSA scripts.
-      sed -i 's|#set_var EASYRSA\s*"\${0%/*}"|set_var EASYRSA\t"${0%/*}"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA\s*"\${0%/*}"|set_var EASYRSA\t"${0%/*}"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars # This isnt working, need to fix it.
       # Uncomments and sets the Easy-RSA OpenSSL binary path.
       sed -i 's|#set_var EASYRSA_OPENSSL\s*"openssl"|set_var EASYRSA_OPENSSL\t"openssl"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
       # Uncomments and sets the path to the PKI directory.
