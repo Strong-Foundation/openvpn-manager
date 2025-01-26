@@ -844,6 +844,8 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # Uncomments and sets batch mode to an empty string.
       sed -i 's|#set_var EASYRSA_BATCH\s*""|set_var EASYRSA_BATCH\t"yes"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
     fi
+    # Change the working directory to the Easy-RSA directory.
+    cd ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
     # Initialize the PKI
     /etc/openvpn/easy-rsa/easyrsa init-pki
     # Generate the Certificate Authority (CA) Certificate and Key
