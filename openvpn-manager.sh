@@ -859,6 +859,8 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Generate the Diffie-Hellman parameters, which are used for secure key exchange during the VPN connection setup.
     # These parameters enhance the security of the connection by enabling Perfect Forward Secrecy (PFS).
     /etc/openvpn/easy-rsa/easyrsa gen-dh
+    # Generate a Certificate Revocation List (CRL), which contains a list of revoked certificates. This is used by OpenVPN to ensure that revoked certificates are not allowed to establish connections.
+    /etc/openvpn/easy-rsa/easyrsa gen-crl
     # Generate the TLS Auth Key
     openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
 
