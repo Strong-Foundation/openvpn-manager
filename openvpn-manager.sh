@@ -846,15 +846,18 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     fi
     # Change the working directory to the Easy-RSA directory.
     cd ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
-    # Initialize the PKI
+    # Initialize the Public Key Infrastructure (PKI) directory, setting up the necessary structure for key and certificate management.
     /etc/openvpn/easy-rsa/easyrsa init-pki
-    # Generate the Certificate Authority (CA) Certificate and Key
+    # Build the Certificate Authority (CA). This creates the root certificate and private key for signing other certificates.
     /etc/openvpn/easy-rsa/easyrsa build-ca
-    # Generate the Server Certificate and Key
+    # Generate a certificate request for the server. This creates the server's private key and certificate request (CSR).
+    /etc/openvpn/easy-rsa/easyrsa gen-req server
+    # Generate the server's certificate using the previously generated certificate request. This signs the CSR with the CA.
     /etc/openvpn/easy-rsa/easyrsa server
-    # Sign the Server Certificate with the CA Certificate
+    # Sign the server's certificate request using the CA's private key to issue the final certificate for the server.
     /etc/openvpn/easy-rsa/easyrsa sign-req server server
-    # Generate Diffie-Hellman Parameters
+    # Generate the Diffie-Hellman parameters, which are used for secure key exchange during the VPN connection setup.
+    # These parameters enhance the security of the connection by enabling Perfect Forward Secrecy (PFS).
     /etc/openvpn/easy-rsa/easyrsa gen-dh
     # Generate the TLS Auth Key
     openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
