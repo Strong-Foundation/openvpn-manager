@@ -905,6 +905,7 @@ compress disable
 # Use AES-256-GCM for encryption, a fast and secure authenticated encryption cipher.
 cipher AES-256-GCM
 
+# Set the ciphers for NCP (Negotiate Cipher Protocol) to AES-256-GCM
 ncp-ciphers AES-256-GCM
 
 # Set the elliptic curve Diffie-Hellman (ECDH) curve to secp521r1 for key exchange
@@ -922,8 +923,10 @@ tls-server
 # Set the minimum required TLS version to 1.3 for stronger encryption and security
 tls-version-min 1.3
 
+# Specify the TLS cipher suite to use, with strong elliptic-curve encryption and SHA-384 for integrity.
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 
+# Directory containing client configuration files
 client-config-dir /etc/openvpn/clients
 
 # Keep the keys intact across restarts to avoid re-negotiating them
@@ -962,6 +965,7 @@ push \"route-ipv6 2000::/3\"
 # Push a directive to redirect all client IPv6 traffic through the VPN gateway
 push \"redirect-gateway ipv6\"
 
+# Set the verbosity level of the log (0 is the least verbose, providing only critical errors).
 verb 0
 "
 
