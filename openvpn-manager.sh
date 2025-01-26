@@ -868,111 +868,140 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="
 # Listen on all available network interfaces (0.0.0.0) for incoming connections.
 local 0.0.0.0
-
 # Set the port for OpenVPN to listen on (e.g., 1194).
 port 1194
-
 # Set the protocol for OpenVPN to use (e.g., udp or tcp).
 proto udp6
-
 # dev tun - routed IP tunnel (e.g., tun), dev tap - ethernet bridge tunnel (e.g., tap)
 dev tun
-
-# Path to the Certificate Authority (CA) certificate
+# Define the IPv4 subnet and netmask for the VPN server to assign client IP addresses.
+server 10.0.0.0 255.0.0.0
+# Define the IPv6 subnet for the VPN server to assign client IPv6 addresses.
+server-ipv6 fd00:00:00::0/8
+# Set the topology to "subnet" for a routed VPN network, where each client gets its own IP address in the network.
+topology subnet
+# Enable IPv6 support on the tunnel interface.
+tun-ipv6
+# Push the IPv6 configuration to connected clients.
+push tun-ipv6
+# Push the primary DNS server to clients (changeable via the DNS_PRIMARY variable).
+push "dhcp-option DNS 1.1.1.1"
+# Push the secondary DNS server to clients (changeable via the DNS_SECONDARY variable).
+push "dhcp-option DNS 1.0.0.1"
+# Redirect all client traffic through the VPN while bypassing local DHCP traffic.
+push "redirect-gateway def1 bypass-dhcp"
+# Push a route for the IPv6 network 2000::/3 to the client, covering all globally routable IPv6 addresses.
+push "route-ipv6 2000::/3"
+# Push a directive to redirect all client IPv6 traffic through the VPN gateway.
+push "redirect-gateway ipv6"
+# Directory containing client configuration files.
+client-config-dir /etc/openvpn/clients
+# Keep the keys intact across restarts to avoid re-negotiating them.
+persist-key
+# Keep the tunnel interface open across restarts to avoid recreating it.
+persist-tun
+# Path to the Certificate Authority (CA) certificate.
 ca /etc/openvpn/server/ca.crt
-
-# Path to the server's SSL certificate
+# Path to the server's SSL certificate.
 cert /etc/openvpn/easy-rsa/keys/server.crt
-
-# Path to the server's private key
+# Path to the server's private key.
 key /etc/openvpn/easy-rsa/keys/server.key
-
-# Path to the Diffie-Hellman parameters for key exchange
+# Path to the Diffie-Hellman parameters for key exchange.
 dh /etc/openvpn/easy-rsa/keys/dh.pem
-
-# Path to the TLS authentication key (for added security)
+# Path to the TLS authentication key (for added security).
 tls-auth /etc/openvpn/easy-rsa/keys/ta.key
-
-# Verify the certificate revocation list (CRL) using the specified crl.pem file to check for revoked certificates
+# Verify the certificate revocation list (CRL) using the specified crl.pem file to check for revoked certificates.
 crl-verify crl.pem
-
 # The keepalive directive sends ping messages every 10 seconds and considers the remote peer down if no ping is received within 120 seconds.
 keepalive 10 120
-
-# Disable compression to avoid the VORACLE attack
+# Disable compression to avoid the VORACLE attack.
 compress disable
-
 # Use AES-256-GCM for encryption, a fast and secure authenticated encryption cipher.
 cipher AES-256-GCM
-
-# Set the ciphers for NCP (Negotiate Cipher Protocol) to AES-256-GCM
+# Set the ciphers for NCP (Negotiate Cipher Protocol) to AES-256-GCM.
 ncp-ciphers AES-256-GCM
-
-# Set the elliptic curve Diffie-Hellman (ECDH) curve to secp521r1 for key exchange
+# Set the elliptic curve Diffie-Hellman (ECDH) curve to secp521r1 for key exchange.
 ecdh-curve secp521r1
-
-# Use tls-crypt for control channel encryption and authentication, providing better security than tls-auth
+# Use tls-crypt for control channel encryption and authentication, providing better security than tls-auth.
 tls-crypt /etc/openvpn/easy-rsa/keys/tc.key 0
-
-# Set the HMAC (hash-based message authentication code) algorithm to SHA512 for message integrity
+# Set the HMAC (hash-based message authentication code) algorithm to SHA512 for message integrity.
 auth SHA512
-
-# Enable TLS server mode, where the OpenVPN server performs the TLS handshake
+# Enable TLS server mode, where the OpenVPN server performs the TLS handshake.
 tls-server
-
-# Set the minimum required TLS version to 1.3 for stronger encryption and security
+# Set the minimum required TLS version to 1.3 for stronger encryption and security.
 tls-version-min 1.3
-
 # Specify the TLS cipher suite to use, with strong elliptic-curve encryption and SHA-384 for integrity.
 tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
-
-# Directory containing client configuration files
-client-config-dir /etc/openvpn/clients
-
-# Keep the keys intact across restarts to avoid re-negotiating them
-persist-key
-
-# Keep the tunnel interface open across restarts to avoid recreating it
-persist-tun
-
-# Set the topology to \"subnet\" for a routed VPN network, where each client gets its own IP address in the network
-topology subnet
-
-# Enable IPv6 support on the tunnel interface
-tun-ipv6
-
-# Push the IPv6 configuration to connected clients
-push tun-ipv6
-
-# Define the IPv4 subnet and netmask for the VPN server to assign client IP addresses
-server 10.0.0.0 255.0.0.0
-
-# Define the IPv6 subnet for the VPN server to assign client IPv6 addresses
-server-ipv6 fd00:00:00::0/8
-
-# Push the primary DNS server to clients (changeable via the DNS_PRIMARY variable).
-push \"dhcp-option DNS 1.1.1.1\"
-
-# Push the secondary DNS server to clients (changeable via the DNS_SECONDARY variable).
-push \"dhcp-option DNS 1.0.0.1\"
-
-# Redirect all client traffic through the VPN while bypassing local DHCP traffic.
-push \"redirect-gateway def1 bypass-dhcp\"
-
-# Push a route for the IPv6 network 2000::/3 to the client, covering all globally routable IPv6 addresses
-push \"route-ipv6 2000::/3\"
-
-# Push a directive to redirect all client IPv6 traffic through the VPN gateway
-push \"redirect-gateway ipv6\"
-
 # Set the verbosity level of the log (0 is the least verbose, providing only critical errors).
 verb 0
 "
 
     # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
 
-    # Put the config in the file.
+    # Put the server config into the server config file.
     echo -e "${OPEN_VPN_SERVER_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CONFIG}
+
+    # Create the OpenVPN client configuration directory if it doesn't exist.
+    if [ ! -d "${OPENVPN_SERVER_CLIENT_DIRECTORY}" ]; then
+      mkdir --parents ${OPENVPN_SERVER_CLIENT_DIRECTORY}
+    fi
+    # Create the OpenVPN client configuration file with the specified settings.
+    OPEN_VPN_CLIENT_CONFIG="
+# Define this as a client configuration file
+client
+# Specify the server's address and port (replace 0.0.0.0 with actual server IP or DNS name).
+remote 0.0.0.0 1194
+# Define the VPN device type (tun for routed IP tunnel, tap for bridged Ethernet tunnel).
+dev tun
+# Use the same protocol as the server (udp or tcp).
+proto udp6
+# Set verbosity to 0 (minimal logging).
+verb 0
+# In case of DNS resolution failure, retry indefinitely.
+resolv-retry infinite
+# Prevent binding to a specific local port, allowing dynamic port assignment.
+nobind
+# Keep the encryption keys intact across restarts to avoid re-negotiating them.
+persist-key
+# Keep the tunnel interface open across restarts to avoid recreating it.
+persist-tun
+# Enable explicit exit notifications. Helps the server know when the client disconnects.
+explicit-exit-notify
+# Ensure the server's certificate matches during the handshake (for security).
+remote-cert-tls server
+# Verify the server's X.509 certificate name to ensure authenticity and avoid MITM attacks.
+verify-x509-name server_vHgFlVhJGDp4N1VK name
+# Use SHA512 for message authentication (ensures message integrity and security).
+auth SHA512
+# Disable caching of authentication credentials to avoid security issues.
+auth-nocache
+# Use AES-256-GCM for encryption, which provides secure and efficient encryption.
+cipher AES-256-GCM
+# Indicate this as a TLS client (required for TLS communication with the server).
+tls-client
+# Set the minimum required TLS version to 1.2 (for security, older versions like TLS 1.0/1.1 should be avoided).
+tls-version-min 1.2
+# Specify the TLS cipher suite to use, which includes strong elliptic-curve encryption and SHA-384 for integrity.
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+# Ignore unknown options that the client doesn't understand (useful for compatibility).
+ignore-unknown-option block-outside-dns
+# Set an environment variable to block DNS requests outside the VPN tunnel (useful for avoiding DNS leaks on Windows).
+setenv opt block-outside-dns
+# The CA certificate verifies the server's certificate and ensures it's signed by a trusted authority.
+<ca>
+</ca>
+# The client certificate authenticates the client to the server during the TLS handshake.
+<cert>
+</cert>
+# The client's private key proves ownership of the client certificate during the TLS handshake.
+<key>
+</key>
+# The TLS-crypt key secures the control channel and protects against attacks like DoS and traffic analysis.
+<tls-crypt>
+</tls-crypt>
+"
+    # Put the client config into the client config file.
+    echo -e "${OPEN_VPN_CLIENT_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn
   }
 
   # Install openvpn
