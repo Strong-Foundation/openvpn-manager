@@ -171,6 +171,8 @@ OPENVPN_SERVER_SSL_CERTIFICATE="/etc/openvpn/server/server.crt"
 OPENVPN_SERVER_SSL_KEY="/etc/openvpn/server/server.key"
 # Set the path to the openvpn server tls-crypt key
 OPENVPN_SERVER_TLS_CRYPT_KEY="/etc/openvpn/server/tls-crypt.key"
+# Set the environment variable to avoid interactive prompts
+export DEBIAN_FRONTEND=noninteractive
 
 # Define the function check_local_tun
 function check_local_tun() {
@@ -788,7 +790,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       make-cadir ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
       # Fix the Easy-RSA configuration variables in the vars file.
       # Uncomments and sets the EASYRSA variable to the directory containing Easy-RSA scripts.
-      sed -i 's|#set_var EASYRSA\s*"\${0%/*}"|set_var EASYRSA\t"${0%/*}"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars # This isnt working, need to fix it.
+      sed -i '0,/^#set_var EASYRSA/ s|#set_var EASYRSA|set_var EASYRSA|' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
       # Uncomments and sets the Easy-RSA OpenSSL binary path.
       sed -i 's|#set_var EASYRSA_OPENSSL\s*"openssl"|set_var EASYRSA_OPENSSL\t"openssl"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
       # Uncomments and sets the path to the PKI directory.
@@ -814,9 +816,9 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # Uncomments and disables password protection for private keys.
       sed -i 's|#set_var EASYRSA_NO_PASS\s*1|set_var EASYRSA_NO_PASS\t1|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
       # Uncomments and sets the default key size for certificates.
-      sed -i 's|#set_var EASYRSA_KEY_SIZE\s*2048|set_var EASYRSA_KEY_SIZE\t2048|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_KEY_SIZE\s*2048|set_var EASYRSA_KEY_SIZE\t4096|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
       # Uncomments and sets the cryptographic algorithm.
-      sed -i 's|#set_var EASYRSA_ALGO\s*rsa|set_var EASYRSA_ALGO\trsa|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_ALGO\s*rsa|set_var EASYRSA_ALGO\tec|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
       # Uncomments and sets the elliptic curve for EC certificates.
       sed -i 's|#set_var EASYRSA_CURVE\s*secp384r1|set_var EASYRSA_CURVE\tsecp384r1|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
       # Uncomments and sets the CA certificate expiration period (in days).
