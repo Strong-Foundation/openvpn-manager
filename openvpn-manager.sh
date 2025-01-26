@@ -844,7 +844,17 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # Uncomments and sets batch mode to an empty string.
       sed -i 's|#set_var EASYRSA_BATCH\s*""|set_var EASYRSA_BATCH\t"yes"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
     fi
-    # Generate the keys
+    # Initialize the PKI
+    /etc/openvpn/easy-rsa/easyrsa init-pki
+    # Generate the Certificate Authority (CA) Certificate and Key
+    /etc/openvpn/easy-rsa/easyrsa build-ca
+    # Generate the Server Certificate and Key
+    /etc/openvpn/easy-rsa/easyrsa server
+    # Sign the Server Certificate with the CA Certificate
+    /etc/openvpn/easy-rsa/easyrsa sign-req server server
+    # Generate Diffie-Hellman Parameters
+    /etc/openvpn/easy-rsa/easyrsa gen-dh
+    # Generate the TLS Auth Key
     openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
 
     # Create the OpenVPN server configuration file with the specified settings.
