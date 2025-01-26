@@ -905,17 +905,26 @@ compress disable
 # Use AES-256-GCM for encryption, a fast and secure authenticated encryption cipher.
 cipher AES-256-GCM
 
-# Set the elliptic curve Diffie-Hellman (ECDH) curve to prime256v1 for key exchange
-ecdh-curve prime256v1
+ncp-ciphers AES-256-GCM
 
-# Set the HMAC (hash-based message authentication code) algorithm to SHA256 for message integrity
-auth SHA256
+# Set the elliptic curve Diffie-Hellman (ECDH) curve to secp521r1 for key exchange
+ecdh-curve secp521r1
+
+# Use tls-crypt for control channel encryption and authentication, providing better security than tls-auth
+tls-crypt /etc/openvpn/easy-rsa/keys/tc.key 0
+
+# Set the HMAC (hash-based message authentication code) algorithm to SHA512 for message integrity
+auth SHA512
 
 # Enable TLS server mode, where the OpenVPN server performs the TLS handshake
 tls-server
 
 # Set the minimum required TLS version to 1.3 for stronger encryption and security
 tls-version-min 1.3
+
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
+
+client-config-dir /etc/openvpn/clients
 
 # Keep the keys intact across restarts to avoid re-negotiating them
 persist-key
@@ -939,10 +948,10 @@ server 10.0.0.0 255.0.0.0
 server-ipv6 fd00:00:00::0/8
 
 # Push the primary DNS server to clients (changeable via the DNS_PRIMARY variable).
-push \"dhcp-option DNS ${DNS_PRIMARY}\"
+push \"dhcp-option DNS 1.1.1.1\"
 
 # Push the secondary DNS server to clients (changeable via the DNS_SECONDARY variable).
-push \"dhcp-option DNS ${DNS_SECONDARY}\"
+push \"dhcp-option DNS 1.0.0.1\"
 
 # Redirect all client traffic through the VPN while bypassing local DHCP traffic.
 push \"redirect-gateway def1 bypass-dhcp\"
@@ -952,6 +961,8 @@ push \"route-ipv6 2000::/3\"
 
 # Push a directive to redirect all client IPv6 traffic through the VPN gateway
 push \"redirect-gateway ipv6\"
+
+verb 0
 "
 
     # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
