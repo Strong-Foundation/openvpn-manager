@@ -153,6 +153,8 @@ LOCAL_TUN_PATH="/dev/net/tun"
 OPENVPN_SERVER_DIRECTORY="/etc/openvpn"
 # Set the path to the openvpn easy-rsa directory
 OPENVPN_SERVER_EASY_RSA_DIRECTORY="${OPENVPN_SERVER_DIRECTORY}/easy-rsa"
+# Set the path to the easyrsa script in the easy-rsa directory
+OPENVPN_SERVER_EASY_RSA_SCRIPT="${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/easyrsa"
 # Set the path to the openvpn server easy-rsa variables file
 OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE="${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars"
 # Set the path to the opnevpn server client directory
@@ -160,7 +162,7 @@ OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_SERVER_DIRECTORY}/clients"
 # Set the path to the openvpn server config
 OPENVPN_SERVER_CONFIG="${OPENVPN_SERVER_DIRECTORY}/server.conf"
 # Set the path to the openvpn server certificate authority
-OPENVPN_SERVER_CERTIFICATE_AUTHORITY="/etc/openvpn/server/ca.crt"
+OPENVPN_SERVER_CERTIFICATE_AUTHORTY="${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/pki/ca.crt"
 # Set the path to the openvpn server certificate authority key
 OPENVPN_SERVER_CERTIFICATE_AUTHORITY_KEY="/etc/openvpn/server/ca.key"
 # Set the path to the openvpn server diffie Hellman parameters file
@@ -790,79 +792,74 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       make-cadir ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
       # Fix the Easy-RSA configuration variables in the vars file.
       # Uncomments and sets the EASYRSA variable to the directory containing Easy-RSA scripts.
-      sed -i '0,/^#set_var EASYRSA/ s|#set_var EASYRSA|set_var EASYRSA|' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i '0,/^#set_var EASYRSA/ s|#set_var EASYRSA|set_var EASYRSA|' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the Easy-RSA OpenSSL binary path.
-      sed -i 's|#set_var EASYRSA_OPENSSL\s*"openssl"|set_var EASYRSA_OPENSSL\t"openssl"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_OPENSSL\s*"openssl"|set_var EASYRSA_OPENSSL\t"openssl"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the path to the PKI directory.
-      sed -i 's|#set_var EASYRSA_PKI\s*"\$PWD/pki"|set_var EASYRSA_PKI\t"$PWD/pki"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_PKI\s*"\$PWD/pki"|set_var EASYRSA_PKI\t"$PWD/pki"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the temporary directory variable.
-      sed -i 's|#set_var EASYRSA_TEMP_DIR\s*"\$EASYRSA_PKI"|set_var EASYRSA_TEMP_DIR\t"$EASYRSA_PKI"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_TEMP_DIR\s*"\$EASYRSA_PKI"|set_var EASYRSA_TEMP_DIR\t"$EASYRSA_PKI"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the Distinguished Name mode to "cn_only".
-      sed -i 's|#set_var EASYRSA_DN\s*"cn_only"|set_var EASYRSA_DN\t"cn_only"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_DN\s*"cn_only"|set_var EASYRSA_DN\t"cn_only"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the default country for the certificate request.
-      sed -i 's|#set_var EASYRSA_REQ_COUNTRY\s*"US"|set_var EASYRSA_REQ_COUNTRY\t"US"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_REQ_COUNTRY\s*"US"|set_var EASYRSA_REQ_COUNTRY\t"US"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the default province for the certificate request.
-      sed -i 's|#set_var EASYRSA_REQ_PROVINCE\s*"California"|set_var EASYRSA_REQ_PROVINCE\t"California"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_REQ_PROVINCE\s*"California"|set_var EASYRSA_REQ_PROVINCE\t"California"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the default city for the certificate request.
-      sed -i 's|#set_var EASYRSA_REQ_CITY\s*"San Francisco"|set_var EASYRSA_REQ_CITY\t"San Francisco"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_REQ_CITY\s*"San Francisco"|set_var EASYRSA_REQ_CITY\t"San Francisco"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the organization name for the certificate request.
-      sed -i 's|#set_var EASYRSA_REQ_ORG\s*"Copyleft Certificate Co"|set_var EASYRSA_REQ_ORG\t"Copyleft Certificate Co"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_REQ_ORG\s*"Copyleft Certificate Co"|set_var EASYRSA_REQ_ORG\t"Copyleft Certificate Co"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the email address for the certificate request.
-      sed -i 's|#set_var EASYRSA_REQ_EMAIL\s*"me@example.net"|set_var EASYRSA_REQ_EMAIL\t"me@example.net"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_REQ_EMAIL\s*"me@example.net"|set_var EASYRSA_REQ_EMAIL\t"me@example.net"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the Organizational Unit for the certificate request.
-      sed -i 's|#set_var EASYRSA_REQ_OU\s*"My Organizational Unit"|set_var EASYRSA_REQ_OU\t"My Organizational Unit"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_REQ_OU\s*"My Organizational Unit"|set_var EASYRSA_REQ_OU\t"My Organizational Unit"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and preserves the Distinguished Name during certificate renewal.
-      sed -i 's|#set_var EASYRSA_PRESERVE_DN\s*1|set_var EASYRSA_PRESERVE_DN\t1|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_PRESERVE_DN\s*1|set_var EASYRSA_PRESERVE_DN\t1|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and disables password protection for private keys.
-      sed -i 's|#set_var EASYRSA_NO_PASS\s*1|set_var EASYRSA_NO_PASS\t1|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_NO_PASS\s*1|set_var EASYRSA_NO_PASS\t1|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the default key size for certificates.
-      sed -i 's|#set_var EASYRSA_KEY_SIZE\s*2048|set_var EASYRSA_KEY_SIZE\t4096|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_KEY_SIZE\s*2048|set_var EASYRSA_KEY_SIZE\t4096|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the cryptographic algorithm.
-      sed -i 's|#set_var EASYRSA_ALGO\s*rsa|set_var EASYRSA_ALGO\tec|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_ALGO\s*rsa|set_var EASYRSA_ALGO\tec|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the elliptic curve for EC certificates.
-      sed -i 's|#set_var EASYRSA_CURVE\s*secp384r1|set_var EASYRSA_CURVE\tsecp384r1|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_CURVE\s*secp384r1|set_var EASYRSA_CURVE\tsecp384r1|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the CA certificate expiration period (in days).
-      sed -i 's|#set_var EASYRSA_CA_EXPIRE\s*3650|set_var EASYRSA_CA_EXPIRE\t3650|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_CA_EXPIRE\s*3650|set_var EASYRSA_CA_EXPIRE\t3650|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the certificate expiration period (in days).
-      sed -i 's|#set_var EASYRSA_CERT_EXPIRE\s*825|set_var EASYRSA_CERT_EXPIRE\t825|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_CERT_EXPIRE\s*825|set_var EASYRSA_CERT_EXPIRE\t825|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the CRL expiration period (in days).
-      sed -i 's|#set_var EASYRSA_CRL_DAYS\s*180|set_var EASYRSA_CRL_DAYS\t180|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_CRL_DAYS\s*180|set_var EASYRSA_CRL_DAYS\t180|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and enables the use of random serial numbers.
-      sed -i 's|#set_var EASYRSA_RAND_SN\s*"yes"|set_var EASYRSA_RAND_SN\t"yes"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_RAND_SN\s*"yes"|set_var EASYRSA_RAND_SN\t"yes"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the pre-expiry notification window (in days).
-      sed -i 's|#set_var EASYRSA_PRE_EXPIRY_WINDOW\s*90|set_var EASYRSA_PRE_EXPIRY_WINDOW\t90|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_PRE_EXPIRY_WINDOW\s*90|set_var EASYRSA_PRE_EXPIRY_WINDOW\t90|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and disables Netscape certificate support.
-      sed -i 's|#set_var EASYRSA_NS_SUPPORT\s*"no"|set_var EASYRSA_NS_SUPPORT\t"no"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_NS_SUPPORT\s*"no"|set_var EASYRSA_NS_SUPPORT\t"no"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the Netscape certificate comment.
-      sed -i 's|#set_var EASYRSA_NS_COMMENT\s*"Easy-RSA Generated Certificate"|set_var EASYRSA_NS_COMMENT\t"Easy-RSA Generated Certificate"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_NS_COMMENT\s*"Easy-RSA Generated Certificate"|set_var EASYRSA_NS_COMMENT\t"Easy-RSA Generated Certificate"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the x509 extension directory.
-      sed -i 's|#set_var EASYRSA_EXT_DIR\s*"\$EASYRSA/x509-types"|set_var EASYRSA_EXT_DIR\t"$EASYRSA/x509-types"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_EXT_DIR\s*"\$EASYRSA/x509-types"|set_var EASYRSA_EXT_DIR\t"$EASYRSA/x509-types"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the Kerberos realm.
-      sed -i 's|#set_var EASYRSA_KDC_REALM\s*"CHANGEME.EXAMPLE.COM"|set_var EASYRSA_KDC_REALM\t"CHANGEME.EXAMPLE.COM"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_KDC_REALM\s*"CHANGEME.EXAMPLE.COM"|set_var EASYRSA_KDC_REALM\t"CHANGEME.EXAMPLE.COM"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the SSL configuration file path.
-      sed -i 's|#set_var EASYRSA_SSL_CONF\s*"\$EASYRSA_PKI/openssl-easyrsa.cnf"|set_var EASYRSA_SSL_CONF\t"$EASYRSA_PKI/openssl-easyrsa.cnf"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_SSL_CONF\s*"\$EASYRSA_PKI/openssl-easyrsa.cnf"|set_var EASYRSA_SSL_CONF\t"$EASYRSA_PKI/openssl-easyrsa.cnf"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets the default digest algorithm for certificates.
-      sed -i 's|#set_var EASYRSA_DIGEST\s*"sha256"|set_var EASYRSA_DIGEST\t"sha256"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_DIGEST\s*"sha256"|set_var EASYRSA_DIGEST\t"sha256"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
       # Uncomments and sets batch mode to an empty string.
-      sed -i 's|#set_var EASYRSA_BATCH\s*""|set_var EASYRSA_BATCH\t"yes"|g' ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars
+      sed -i 's|#set_var EASYRSA_BATCH\s*""|set_var EASYRSA_BATCH\t"yes"|g' ${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}
     fi
     # Change the working directory to the Easy-RSA directory.
     cd ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
-    # Initialize the Public Key Infrastructure (PKI) directory, setting up the necessary structure for key and certificate management.
-    /etc/openvpn/easy-rsa/easyrsa init-pki
-    # Build the Certificate Authority (CA). This creates the root certificate and private key for signing other certificates.
-    /etc/openvpn/easy-rsa/easyrsa build-ca
-    # Generate a certificate request for the server. This creates the server's private key and certificate request (CSR).
-    /etc/openvpn/easy-rsa/easyrsa gen-req server
-    # Generate the server's certificate using the previously generated certificate request. This signs the CSR with the CA.
-    /etc/openvpn/easy-rsa/easyrsa server
-    # Sign the server's certificate request using the CA's private key to issue the final certificate for the server.
-    /etc/openvpn/easy-rsa/easyrsa sign-req server server
-    # Generate the Diffie-Hellman parameters, which are used for secure key exchange during the VPN connection setup.
-    # These parameters enhance the security of the connection by enabling Perfect Forward Secrecy (PFS).
-    /etc/openvpn/easy-rsa/easyrsa gen-dh
-    # Generate a Certificate Revocation List (CRL), which contains a list of revoked certificates. This is used by OpenVPN to ensure that revoked certificates are not allowed to establish connections.
-    /etc/openvpn/easy-rsa/easyrsa gen-crl
+    # Initialize the Public Key Infrastructure (PKI) directory, setting up the necessary structure for key and certificate management. (pki)
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} init-pki
+    # Build the Certificate Authority (CA). This creates the root certificate and private key for signing other certificates. (ca.crt)
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} build-ca nopass
+    # Build a server certificate for OpenVPN with Easy-RSA, skipping the passphrase. This generates the server's public certificate and private key. (server.crt and server.key)
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} build-server-full server nopass
+    # These parameters enhance the security of the connection by enabling Perfect Forward Secrecy (PFS). (ta.key)
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} gen-dh
+    # Generate a certificate revocation list (CRL) for OpenVPN using Easy-RSA. This list is used to revoke certificates that are no longer valid. (crl.pem)
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} gen-crl
     # Generate the TLS Auth Key
     openvpn --genkey --secret ${OPENVPN_TLS_CRYPT_PRIVATE_KEY_PATH}
 
@@ -1035,6 +1032,7 @@ else
   # Function to add a new OpenVPN client
   function add_openvpn_client() {
     # Add a new OpenVPN client
+    CA_CRT_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/ca.crt)
   }
 
   # Function to remove an OpenVPN client
