@@ -763,22 +763,14 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Call the function to install Unbound.
   install_unbound
 
-  # Set cipher for the data channel
-  DATA_CHANNEL_CIPHER="AES-256-GCM" # Stronger encryption for the data channel
-  # Set certificate type
-  CERTIFICATE_TYPE="ECDSA" # Secure and efficient certificate type
-  # Set curve for certificate key
-  CERTIFICATE_CURVE="secp521r1" # Strongest curve for ECDSA
-  # Set cipher for the control channel
-  CONTROL_CHANNEL_CIPHER="TLS_AES_256_GCM_SHA384" # Strong cipher for control channel
-  # Set Diffie-Hellman key type
-  DIFFIE_HELLMAN_KEY="ECDH" # Secure and efficient Diffie-Hellman key exchange
-  # Set curve for ECDH key
-  ECDH_CURVE="secp521r1" # Strongest ECDH curve for key exchange
-  # Set HMAC digest algorithm
-  HMAC_DIGEST="SHA-512" # Strongest HMAC digest for better security
-  # Set tls-auth or tls-crypt
-  TLS_AUTH_MODE="tls-crypt" # Provides encryption and authentication for control channel
+  # Encryption cipher for the data channel
+  DATA_CHANNEL_ENCRYPTION="AES-256-GCM" # High-strength encryption for data transmission
+  # Elliptic curve used for the certificate key
+  CERTIFICATE_ECDSA_CURVE="secp521r1" # Strongest curve for ECDSA (Elliptic Curve Digital Signature Algorithm)
+  # Encryption cipher suite for the control channel
+  CONTROL_CHANNEL_ENCRYPTION="TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384" # Robust encryption suite for secure control channel communication
+  # HMAC digest algorithm for authentication
+  HMAC_ALGORITHM="SHA512" # High-security HMAC (Hash-based Message Authentication Code) algorithm
 
   # Function to install openvpn.
   function install_openvpn() {
