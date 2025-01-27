@@ -874,6 +874,8 @@ dev tun
 
 # Define the IPv4 subnet and netmask for the VPN server to assign client IP addresses.
 server 10.0.0.0 255.0.0.0
+# Define the IPv6 subnet for the VPN server to assign client IPv6 addresses.
+server-ipv6 fd00:00:00::0/8
 # Set the topology to \"subnet\" for a routed VPN network, where each client gets its own IP address in the network.
 topology subnet
 
@@ -885,14 +887,10 @@ push tun-ipv6
 push \"redirect-gateway ipv6\"
 # Push a route for the IPv6 network 2000::/3 to the client, covering all globally routable IPv6 addresses.
 push \"route-ipv6 2000::/3\"
-# Define the IPv6 subnet for the VPN server to assign client IPv6 addresses.
-server-ipv6 fd00:00:00::0/8
-
 # Push the primary DNS server to clients (changeable via the DNS_PRIMARY variable).
 push \"dhcp-option DNS 1.1.1.1\"
 # Push the secondary DNS server to clients (changeable via the DNS_SECONDARY variable).
 push \"dhcp-option DNS 1.0.0.1\"
-
 # Redirect all client traffic through the VPN while bypassing local DHCP traffic.
 push \"redirect-gateway def1 bypass-dhcp\"
 
@@ -943,9 +941,10 @@ auth SHA512
 # Disable Negotiable Crypto Parameters (NCP) to prevent the use of weaker ciphers.
 ncp-disable
 
-
 # Set the verbosity level of the log (0 is the least verbose, providing only critical errors).
 verb 0
+#
+explicit-exit-notify 1
 "
     # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
 
