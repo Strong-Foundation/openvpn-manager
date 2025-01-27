@@ -768,7 +768,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Elliptic curve used for the certificate key
   CERTIFICATE_ECDSA_CURVE="secp521r1" # Strongest curve for ECDSA (Elliptic Curve Digital Signature Algorithm)
   # Encryption cipher suite for the control channel
-  CONTROL_CHANNEL_ENCRYPTION="TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384" # Robust encryption suite for secure control channel communication
+  CONTROL_CHANNEL_ENCRYPTION="TLS_AES_256_GCM_SHA384" # Robust encryption suite for secure control channel communication
   # HMAC digest algorithm for authentication
   HMAC_ALGORITHM="SHA512" # High-security HMAC (Hash-based Message Authentication Code) algorithm
 
