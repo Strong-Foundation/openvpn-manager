@@ -867,10 +867,8 @@ local 0.0.0.0
 
 # Set the port for OpenVPN to listen on (e.g., 1194).
 port 1194
-
 # Set the protocol for OpenVPN to use (e.g., udp or tcp).
 proto udp6
-
 # dev tun - routed IP tunnel (e.g., tun), dev tap - ethernet bridge tunnel (e.g., tap)
 dev tun
 
@@ -928,6 +926,12 @@ keepalive 10 120
 # Disable compression to avoid the VORACLE attack.
 compress disable
 
+# Enable TLS server mode, where the OpenVPN server performs the TLS handshake.
+tls-server
+# Set the minimum required TLS version to 1.3 for stronger encryption and security.
+tls-version-min 1.3
+# Specify the TLS cipher suite to use, with strong elliptic-curve encryption and SHA-384 for integrity.
+tls-cipher TLS_AES_256_GCM_SHA384
 # Use AES-256-GCM for encryption, a fast and secure authenticated encryption cipher.
 cipher AES-256-GCM
 # Set the ciphers for NCP (Negotiate Cipher Protocol) to AES-256-GCM.
@@ -939,12 +943,6 @@ auth SHA512
 # Disable Negotiable Crypto Parameters (NCP) to prevent the use of weaker ciphers.
 ncp-disable
 
-# Enable TLS server mode, where the OpenVPN server performs the TLS handshake.
-tls-server
-# Set the minimum required TLS version to 1.3 for stronger encryption and security.
-tls-version-min 1.3
-# Specify the TLS cipher suite to use, with strong elliptic-curve encryption and SHA-384 for integrity.
-tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 
 # Set the verbosity level of the log (0 is the least verbose, providing only critical errors).
 verb 0
