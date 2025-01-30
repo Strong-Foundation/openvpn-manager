@@ -23,9 +23,14 @@ RUN bash /usr/local/bin/openvpn-manager.sh --install
 # Sleep to keep the container running
 CMD ["sleep", "infinity"]
 
-# Build the cointainer
-# docker build -t openvpn-manager .
-# Run the container
-# docker run -d --name openvpn-container --cap-add=NET_ADMIN -p 1194:1194/udp openvpn-manager
-# Connect to the container
-# docker exec -it openvpn-container bash
+# Build the Docker Image
+# docker build -f Dockerfile.server -t openvpn-server .
+
+# Run the Container
+# docker run -d --name openvpn-server --cap-add=NET_ADMIN -p 1194:1194/udp openvpn-server
+
+# Access the Running Container
+# docker exec -it openvpn-server bash
+
+# Check OpenVPN Logs
+# docker exec -it openvpn-server cat /var/log/openvpn.log
