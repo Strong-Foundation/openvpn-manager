@@ -1,0 +1,35 @@
+FROM ubuntu:latest
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install OpenVPN and required packages
+RUN apt-get update && apt-get install -y \
+    openvpn \
+    iproute2 \
+    iptables \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create OpenVPN directory
+RUN mkdir -p /etc/openvpn
+
+# Copy OpenVPN client configuration
+COPY client.ovpn /etc/openvpn/client.ovpn
+
+# Start OpenVPN in the background
+RUN openvpn --config /etc/openvpn/client.ovpn --daemon --log /var/log/openvpn.log
+
+# Keep the container running
+CMD ["sleep", "infinity"]
+
+# Build the Docker Image
+# docker build -t openvpn-client .
+
+# Run the Container
+# docker run -d --name my-vpn-container --cap-add=NET_ADMIN openvpn-client
+
+# Access the Running Container
+# docker exec -it my-vpn-container bash
+
+# Check OpenVPN Logs
+# docker exec -it my-vpn-container cat /var/log/openvpn.log
