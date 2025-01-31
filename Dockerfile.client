@@ -4,11 +4,8 @@ FROM ubuntu:latest
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install OpenVPN and required packages
-RUN apt-get update && apt-get install -y \
-    openvpn \
-    iproute2 \
-    iptables \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update &&  \
+    apt-get install openvpn iproute2 iptables -y
 
 # Create OpenVPN directory
 RUN mkdir -p /etc/openvpn
