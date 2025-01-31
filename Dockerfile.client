@@ -13,6 +13,10 @@ RUN mkdir -p /etc/openvpn
 # Copy OpenVPN client configuration
 COPY aws.ovpn /etc/openvpn/client.ovpn
 
+# Create a custom resolv.conf and install nameservers
+RUN echo "nameserver 1.1.1.1" > /etc/resolv.conf && \
+    echo "nameserver 1.0.0.1" >> /etc/resolv.conf
+
 # Start OpenVPN in the background
 RUN openvpn --config /etc/openvpn/client.ovpn --daemon --log /var/log/openvpn.log
 
@@ -22,8 +26,11 @@ CMD ["sleep", "infinity"]
 # Build the Docker Image
 # docker build -f Dockerfile.client -t openvpn-client .
 
+# Create a Docker Network
+# docker network create vpn_network
+
 # Run the Container
-# docker run -d --name openvpn-client --cap-add=NET_ADMIN openvpn-client
+# docker run -d --name openvpn-client --cap-add=NET_ADMIN --device /dev/net/tun --network vpn_network openvpn-client
 
 # Access the Running Container
 # docker exec -it openvpn-client bash
