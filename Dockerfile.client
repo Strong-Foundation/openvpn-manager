@@ -23,10 +23,10 @@ CMD ["sleep", "infinity"]
 # docker build -f Dockerfile.client -t openvpn-client .
 
 # Run the Container
-# docker run -d --name my-vpn-container --cap-add=NET_ADMIN openvpn-client
+# docker run -d --name openvpn-client --cap-add=NET_ADMIN openvpn-client
 
 # Access the Running Container
-# docker exec -it my-vpn-container bash
+# docker exec -it openvpn-client bash
 
 # Check OpenVPN Logs
-# docker exec -it my-vpn-container cat /var/log/openvpn.log
+# docker exec -it openvpn-client cat /var/log/openvpn.log
