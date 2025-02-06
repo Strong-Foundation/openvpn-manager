@@ -328,7 +328,7 @@ function headless_install() {
     SERVER_PORT_SETTINGS=${SERVER_PORT_SETTINGS=1}         # Default to 1 (1194)
     DNS_PROVIDER_SETTINGS=${DNS_PROVIDER_SETTINGS=1}       # Default to 1 (Unbound)
     CONTENT_BLOCKER_SETTINGS=${CONTENT_BLOCKER_SETTINGS=1} # Default to 1 (Yes)
-    CLIENT_NAME=${CLIENT_NAME}                             # Set the client name
+    CLIENT_NAME=${CLIENT_NAME=$(openssl rand -hex 5)}      # Set the client name
   fi
 }
 
