@@ -170,13 +170,21 @@ OPENVPN_SERVER_CERTIFICATE_AUTHORTY="${OPENVPN_PKI_DIRECTORY}/ca.crt"
 # Set the path to the openvpn server diffie Hellman parameters file
 OPENVPN_SERVER_DIFFIE_HELLMAN_PARAMETERS="${OPENVPN_PKI_DIRECTORY}/dh.pem"
 # Set the path to the openvpn server tls-crypt key
-OPENVPN_SERVER_TLS_CRYPT_KEY="${OPENVPN_SERVER_DIRECTORY}/tls-crypt.key"
+OPENVPN_SERVER_TLS_CRYPT_KEY="${OPENVPN_SERVER_DIRECTORY}/tls-crypt-v2.key"
 # Set the path to the openvpn server ssl certificate
 OPENVPN_SERVER_SSL_CERTIFICATE="${OPENVPN_PKI_DIRECTORY}/issued/server.crt"
 # Set the path to the openvpn server ssl key
 OPENVPN_SERVER_SSL_KEY="${OPENVPN_PKI_DIRECTORY}/private/server.key"
 # Set the path to the openvpn server ssl certificate revocation list
 OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST="${OPENVPN_PKI_DIRECTORY}/crl.pem"
+# Read the content of the certificate authority (CA) file into a variable
+OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY})
+# Extract and store the content of the client certificate (specified by CLIENT_NAME) from the .crt file
+OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/${CLIENT_NAME}.crt)
+# Read the content of the private key for the client (specified by CLIENT_NAME) into a variable
+OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/${CLIENT_NAME}.key)
+# Read the content of the TLS crypt key into a variable
+OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT=$(cat ${OPENVPN_SERVER_TLS_CRYPT_KEY})
 
 # Set the environment variable to avoid interactive prompts
 export DEBIAN_FRONTEND=noninteractive
@@ -857,12 +865,13 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} gen-dh
     # Generate a certificate revocation list (CRL) for OpenVPN using Easy-RSA. This list is used to revoke certificates that are no longer valid. (crl.pem)
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} gen-crl
+    # Make the (crt.pem) file readable by the OpenVPN server.
+    chmod 644 ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST}
     # Generate the TLS Auth Key
     openvpn --genkey secret ${OPENVPN_SERVER_TLS_CRYPT_KEY}
 
     # Create the OpenVPN server configuration file with the specified settings.
-    OPEN_VPN_SERVER_CONFIG="
-# - Network Interface & Port Settings -
+    OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
 local ::
@@ -935,11 +944,11 @@ tls-server
 # Enforce TLS 1.3 for the best available security
 tls-version-min 1.3
 # Specify the TLS cipher for the control channel
-tls-cipher TLS_AES_256_GCM_SHA384
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 # Use AES-256-GCM for data channel encryption (modern and fast)
 cipher AES-256-GCM
-# Allow AES-256-GCM, with fallback to AES-256-CBC for older clients if needed
-ncp-ciphers AES-256-GCM:AES-256-CBC
+# Allow AES-256-GCM for data channel encryption (fast and secure)
+data-ciphers AES-256-GCM
 # Use the secp521r1 elliptic curve for ECDH key exchange (provides strong security)
 ecdh-curve secp521r1
 # Use SHA512 for HMAC message authentication to ensure data integrity
@@ -974,8 +983,7 @@ script-security 2
 # - Logging & Debugging -
 
 # Disable logging (no logs will be written)
-verb 0
-"
+verb 0"
     # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
 
     # Put the server config into the server config file.
@@ -989,12 +997,20 @@ verb 0
     if [ ! -d "${OPENVPN_SERVER_CLIENT_DIRECTORY}" ]; then
       mkdir --parents ${OPENVPN_SERVER_CLIENT_DIRECTORY}
     fi
+    # Enable IP forwarding in the kernel.
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    # Restart the OpenVPN service to apply the changes.
+    systemctl enable openvpn@server
+    systemctl restart openvpn@server
+
     # Generate the client certificate and key.
     easyrsa build-client-full client1 nopass
-    # Create the OpenVPN client configuration file with the specified settings.
-    OPEN_VPN_CLIENT_CONFIG="
-# - Client Basic Settings -
 
+    # Create the OpenVPN client configuration file with the specified settings.
+    OPEN_VPN_CLIENT_CONFIG="# - Client Basic Settings -
+#
+client
 # Specify the OpenVPN protocol and use UDP for better performance
 proto udp
 # Define the remote server IP or hostname and the port number
@@ -1011,28 +1027,28 @@ remote-cert-tls server
 # Enforce TLS 1.3 for stronger security
 tls-version-min 1.3
 # Specify the TLS cipher suite for the control channel
-tls-cipher TLS_AES_256_GCM_SHA384
+tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
 # Use AES-256-GCM for data encryption (fast and secure)
 cipher AES-256-GCM
 # Use SHA512 for HMAC message authentication to ensure data integrity
 auth SHA512
 # Disable cipher negotiation to enforce the chosen ciphers
-ncp-disable
+#- ncp-disable
 
 # - Connection Settings -
 
 # Persist authentication keys across restarts to avoid re-authentication
-persist-key
+#- persist-key
 # Keep the tunnel open across restarts to prevent reconnection delays
-persist-tun
+#- persist-tun
 # Automatically retry resolving the server address if the connection fails
-resolv-retry infinite
+#- resolv-retry infinite
 # Do not bind to a specific local port (let the OS choose)
 nobind
 # Send a ping every 10 seconds; disconnect if no response within 60 seconds
 keepalive 10 60
 # Notify the server explicitly when disconnecting
-explicit-exit-notify 2
+#- explicit-exit-notify 2
 
 # - Routing & DNS -
 
@@ -1058,9 +1074,9 @@ pull-filter ignore \"ifconfig-ipv6\"
 # Automatically disconnect if inactive for 15 minutes (900 seconds)
 inactive 900
 # Allow mobile devices to sleep while maintaining a stable connection
-ping-timer-rem
+#- ping-timer-rem
 # Reduce power consumption by decreasing keepalive frequency
-keepalive 10 120
+#- keepalive 10 120
 
 # - Compression & Logging -
 
@@ -1073,19 +1089,19 @@ verb 0
 
 # The CA certificate verifies the server's certificate and ensures it's signed by a trusted authority
 <ca>
-#- cat /etc/openvpn/easy-rsa/pki/ca.crt
+${OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT}
 </ca>
 # The client certificate authenticates the client to the server during the TLS handshake
 <cert>
-#- sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/client-1.crt
+${OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT}
 </cert>
 # The client's private key proves ownership of the client certificate during the TLS handshake
 <key>
-#- cat /etc/openvpn/easy-rsa/pki/private/client-1.key
+${OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT}
 </key>
 # The TLS-crypt key secures the control channel and protects against attacks like DoS and traffic analysis
 <tls-crypt>
-#- cat /etc/openvpn/server/tls-crypt-v2.key
+${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 </tls-crypt>
 "
     # Put the client config into the client config file.
