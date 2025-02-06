@@ -177,14 +177,6 @@ OPENVPN_SERVER_SSL_CERTIFICATE="${OPENVPN_PKI_DIRECTORY}/issued/server.crt"
 OPENVPN_SERVER_SSL_KEY="${OPENVPN_PKI_DIRECTORY}/private/server.key"
 # Set the path to the openvpn server ssl certificate revocation list
 OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST="${OPENVPN_PKI_DIRECTORY}/crl.pem"
-# Read the content of the certificate authority (CA) file into a variable
-OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY})
-# Extract and store the content of the client certificate (specified by CLIENT_NAME) from the .crt file
-OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/${CLIENT_NAME}.crt)
-# Read the content of the private key for the client (specified by CLIENT_NAME) into a variable
-OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/${CLIENT_NAME}.key)
-# Read the content of the TLS crypt key into a variable
-OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT=$(cat ${OPENVPN_SERVER_TLS_CRYPT_KEY})
 
 # Set the environment variable to avoid interactive prompts
 export DEBIAN_FRONTEND=noninteractive
@@ -1004,8 +996,17 @@ verb 0"
     systemctl enable openvpn@server
     systemctl restart openvpn@server
 
+    # Read the content of the certificate authority (CA) file into a variable
+    OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY})
+    # Extract and store the content of the client certificate (specified by CLIENT_NAME) from the .crt file
+    OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/${CLIENT_NAME}.crt)
+    # Read the content of the private key for the client (specified by CLIENT_NAME) into a variable
+    OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/${CLIENT_NAME}.key)
+    # Read the content of the TLS crypt key into a variable
+    OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT=$(cat ${OPENVPN_SERVER_TLS_CRYPT_KEY})
+
     # Generate the client certificate and key.
-    easyrsa build-client-full client1 nopass
+    easyrsa build-client-full ${CLIENT_NAME} nopass
 
     # Create the OpenVPN client configuration file with the specified settings.
     OPEN_VPN_CLIENT_CONFIG="# - Client Basic Settings -
