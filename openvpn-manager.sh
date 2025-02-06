@@ -413,19 +413,19 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Set the protocols based on the user's choice
     case ${PROTOCOL_CHOICE} in
     1)
-      PRIMARY_PROTOCOL="UDP6"
-      SECONDARY_PROTOCOL="TCP6"
+      PRIMARY_PROTOCOL="udp6"
+      SECONDARY_PROTOCOL="tcp6"
       ;;
     2)
-      PRIMARY_PROTOCOL="TCP6"
-      SECONDARY_PROTOCOL="UDP6"
+      PRIMARY_PROTOCOL="tcp6"
+      SECONDARY_PROTOCOL="udp6"
       ;;
     3)
-      PRIMARY_PROTOCOL="UDP6"
+      PRIMARY_PROTOCOL="udp6"
       SECONDARY_PROTOCOL="none"
       ;;
     4)
-      PRIMARY_PROTOCOL="TCP6"
+      PRIMARY_PROTOCOL="tcp6"
       SECONDARY_PROTOCOL="none"
       ;;
     esac
@@ -444,7 +444,6 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # Ask the user to choose a port option, defaulting to 1 (1194)
       read -rp "Port Choice [1-2]: " -e -i 1 SERVER_PORT_SETTINGS
     done
-
     # Set the server port based on the user's choice
     case ${SERVER_PORT_SETTINGS} in
     1)
@@ -763,12 +762,14 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Call the function to install Unbound.
   install_unbound
 
+  #
+  DATA_CHIPER="AES-256-GCM"
   # Encryption cipher for the data channel
   DATA_CHANNEL_ENCRYPTION="AES-256-GCM" # High-strength encryption for data transmission
   # Elliptic curve used for the certificate key
   CERTIFICATE_ECDSA_CURVE="secp521r1" # Strongest curve for ECDSA (Elliptic Curve Digital Signature Algorithm)
   # Encryption cipher suite for the control channel
-  CONTROL_CHANNEL_ENCRYPTION="TLS_AES_256_GCM_SHA384" # Robust encryption suite for secure control channel communication
+  CONTROL_CHANNEL_ENCRYPTION="TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384" # Robust encryption suite for secure control channel communication
   # HMAC digest algorithm for authentication
   HMAC_ALGORITHM="SHA512" # High-security HMAC (Hash-based Message Authentication Code) algorithm
 
@@ -867,10 +868,10 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
 local ::
-# Use port 1194 for incoming VPN connections
-port 1194
+# Use port ${SERVER_PORT} for incoming VPN connections
+port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
-proto udp6
+proto ${PRIMARY_PROTOCOL}
 # Create a routed IP tunnel (tun); use \"tap\" if you require bridging
 dev tun
 
@@ -917,34 +918,34 @@ ifconfig-pool-persist /etc/openvpn/ipp.txt
 # - Certificate & Key Files -
 
 # Path to the Certificate Authority (CA) certificate
-ca /etc/openvpn/easy-rsa/pki/ca.crt
+ca ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY}
 # Path to the server's certificate
-cert /etc/openvpn/easy-rsa/pki/issued/server.crt
+cert ${OPENVPN_SERVER_SSL_CERTIFICATE}
 # Path to the server's private key
-key /etc/openvpn/easy-rsa/pki/private/server.key
+key ${OPENVPN_SERVER_SSL_KEY}
 # Path to Diffie-Hellman parameters for key exchange
-dh /etc/openvpn/easy-rsa/pki/dh.pem
+dh ${OPENVPN_SERVER_DIFFIE_HELLMAN_PARAMETERS}
 # Verify client certificates against this CRL
-crl-verify /etc/openvpn/easy-rsa/pki/crl.pem
+crl-verify ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST}
 
 # - TLS & Cryptographic Settings -
 
 # Use tls-crypt-v2 for control channel encryption/authentication (requires OpenVPN 2.5+)
-tls-crypt-v2 /etc/openvpn/server/tls-crypt-v2.key
+tls-crypt-v2 ${OPENVPN_SERVER_TLS_CRYPT_KEY}
 # Enable TLS server mode for secure client connections
 tls-server
 # Enforce TLS 1.3 for the best available security
 tls-version-min 1.3
 # Specify the TLS cipher for the control channel
-tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
-# Use AES-256-GCM for data channel encryption (modern and fast)
-cipher AES-256-GCM
-# Allow AES-256-GCM for data channel encryption (fast and secure)
-data-ciphers AES-256-GCM
-# Use the secp521r1 elliptic curve for ECDH key exchange (provides strong security)
-ecdh-curve secp521r1
-# Use SHA512 for HMAC message authentication to ensure data integrity
-auth SHA512
+tls-cipher ${CONTROL_CHANNEL_ENCRYPTION}
+# Use ${DATA_CHIPER} for data channel encryption (modern and fast)
+cipher ${DATA_CHIPER}
+# Allow ${DATA_CHANNEL_ENCRYPTION} for data channel encryption (fast and secure)
+data-ciphers ${DATA_CHANNEL_ENCRYPTION}
+# Use the ${CERTIFICATE_ECDSA_CURVE} elliptic curve for ECDH key exchange (provides strong security)
+ecdh-curve ${CERTIFICATE_ECDSA_CURVE}
+# Use ${HMAC_ALGORITHM} for HMAC message authentication to ensure data integrity
+auth ${HMAC_ALGORITHM}
 # Enforce the above cipher suite without further negotiation
 #- ncp-disable
 
@@ -1013,7 +1014,7 @@ verb 0"
 #
 client
 # Specify the OpenVPN protocol and use UDP for better performance
-proto udp
+proto ${PRIMARY_PROTOCOL}
 # Define the remote server IP or hostname and the port number
 remote YOUR_SERVER_IP_OR_HOSTNAME 1194 udp
 # Use a tunnel device (tun) instead of an ethernet bridge (tap)
