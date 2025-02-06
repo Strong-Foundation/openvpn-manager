@@ -1065,7 +1065,7 @@ keepalive 10 120
 # - Compression & Logging -
 
 # Disable compression to prevent security vulnerabilities (e.g., VORACLE attack)
-compress disable
+#- compress disable
 # Set logging verbosity (increase for debugging, lower for less output)
 verb 0
 
