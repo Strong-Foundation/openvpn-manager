@@ -338,65 +338,77 @@ headless_install
 # Set up the openvpn, if config it isn't already there.
 if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
-  # Define a function to retrieve the IPv4 address of the WireGuard interface
   function test_connectivity_v4() {
-    # "get_network_information" that retrieves network information.
-    get_network_information
-    # Prompt the user to choose the method for detecting the IPv4 address
-    echo "How would you like to detect IPv4?"
-    echo "  1) Curl (Recommended)"
-    echo "  2) Custom (Advanced)"
-    # Loop until the user provides a valid input
-    until [[ "${SERVER_HOST_V4_SETTINGS}" =~ ^[1-2]$ ]]; do
-      read -rp "IPv4 Choice [1-2]:" -e -i 1 SERVER_HOST_V4_SETTINGS
+    echo "How would you like to detect IPv4?"                       # Ask user how to detect IPv4
+    echo "  1) Curl (Recommended)"                                  # Option 1: Use Curl for automatic detection
+    echo "  2) Custom (Advanced)"                                   # Option 2: User manually enters an IP
+    until [[ "${SERVER_HOST_V4_SETTINGS}" =~ ^[1-2]$ ]]; do         # Ensure valid input
+      read -rp "IPv4 Choice [1-2]:" -e -i 1 SERVER_HOST_V4_SETTINGS # Prompt user
     done
-    # Choose the method for detecting the IPv4 address based on the user's input
     case ${SERVER_HOST_V4_SETTINGS} in
     1)
-      SERVER_HOST_V4=${DEFAULT_INTERFACE_IPV4} # Use the default IPv4 address
+      SERVER_HOST_V4=${DEFAULT_INTERFACE_IPV4} # Use default detected IPv4
       ;;
     2)
-      # Prompt the user to enter a custom IPv4 address
-      read -rp "Custom IPv4:" SERVER_HOST_V4
-      # If the user doesn't provide an input, use the default IPv4 address
-      if [ -z "${SERVER_HOST_V4}" ]; then
+      read -rp "Custom IPv4:" SERVER_HOST_V4 # Prompt user for custom IPv4
+      if [ -z "${SERVER_HOST_V4}" ]; then    # If no input, fallback to default
         SERVER_HOST_V4=${DEFAULT_INTERFACE_IPV4}
       fi
       ;;
     esac
   }
 
-  # Call the function to retrieve the IPv4 address
-  test_connectivity_v4
+  test_connectivity_v4 # Call function to retrieve IPv4 address
 
-  # Define a function to retrieve the IPv6 address of the WireGuard interface
   function test_connectivity_v6() {
-    # Prompt the user to choose the method for detecting the IPv6 address
-    echo "How would you like to detect IPv6?"
-    echo "  1) Curl (Recommended)"
-    echo "  2) Custom (Advanced)"
-    # Loop until the user provides a valid input
-    until [[ "${SERVER_HOST_V6_SETTINGS}" =~ ^[1-2]$ ]]; do
-      read -rp "IPv6 Choice [1-2]:" -e -i 1 SERVER_HOST_V6_SETTINGS
+    echo "How would you like to detect IPv6?"                       # Ask user how to detect IPv6
+    echo "  1) Curl (Recommended)"                                  # Option 1: Use Curl for automatic detection
+    echo "  2) Custom (Advanced)"                                   # Option 2: User manually enters an IP
+    until [[ "${SERVER_HOST_V6_SETTINGS}" =~ ^[1-2]$ ]]; do         # Ensure valid input
+      read -rp "IPv6 Choice [1-2]:" -e -i 1 SERVER_HOST_V6_SETTINGS # Prompt user
     done
-    # Choose the method for detecting the IPv6 address based on the user's input
     case ${SERVER_HOST_V6_SETTINGS} in
     1)
-      SERVER_HOST_V6=${DEFAULT_INTERFACE_IPV6} # Use the default IPv6 address
+      SERVER_HOST_V6=${DEFAULT_INTERFACE_IPV6} # Use default detected IPv6
       ;;
     2)
-      # Prompt the user to enter a custom IPv6 address
-      read -rp "Custom IPv6:" SERVER_HOST_V6
-      # If the user doesn't provide an input, use the default IPv6 address
-      if [ -z "${SERVER_HOST_V6}" ]; then
+      read -rp "Custom IPv6:" SERVER_HOST_V6 # Prompt user for custom IPv6
+      if [ -z "${SERVER_HOST_V6}" ]; then    # If no input, fallback to default
         SERVER_HOST_V6=${DEFAULT_INTERFACE_IPV6}
       fi
       ;;
     esac
   }
 
-  # Call the function to retrieve the IPv6 address
-  test_connectivity_v6
+  test_connectivity_v6 # Call function to retrieve IPv6 address
+
+  function ipvx_select_openvpn() {
+    echo "Which IP version do you want to use for the OpenVPN server?" # Ask user for IP version
+    echo "  1) IPv4 (Recommended)"                                     # Option 1: Use IPv4
+    echo "  2) IPv6"                                                   # Option 2: Use IPv6
+    until [[ "${SERVER_HOST_SETTINGS}" =~ ^[1-2]$ ]]; do               # Ensure valid input
+      read -rp "IP Version Choice [1-2]:" -e -i 1 SERVER_HOST_SETTINGS # Prompt user
+    done
+    case ${SERVER_HOST_SETTINGS} in
+    1)
+      if [ -n "${SERVER_HOST_V4}" ]; then # Check if IPv4 is available
+        SERVER_HOST="${SERVER_HOST_V4}"   # Set server host to IPv4
+      else
+        SERVER_HOST="[${SERVER_HOST_V6}]" # Fallback to IPv6 if IPv4 is unavailable
+      fi
+      ;;
+    2)
+      if [ -n "${SERVER_HOST_V6}" ]; then # Check if IPv6 is available
+        SERVER_HOST="[${SERVER_HOST_V6}]" # Set server host to IPv6
+      else
+        SERVER_HOST="${SERVER_HOST_V4}" # Fallback to IPv4 if IPv6 is unavailable
+      fi
+      ;;
+    esac
+  }
+
+  # Invoke the function to select the IP version for OpenVPN
+  ipvx_select_openvpn
 
   # Define a function to configure the protocol settings for OpenVPN
   function configure_protocol() {
@@ -1016,7 +1028,7 @@ client
 # Specify the OpenVPN protocol and use UDP for better performance
 proto ${PRIMARY_PROTOCOL}
 # Define the remote server IP or hostname and the port number
-remote YOUR_SERVER_IP_OR_HOSTNAME 1194 udp
+remote ${SERVER_HOST} 1194
 # Use a tunnel device (tun) instead of an ethernet bridge (tap)
 dev tun
 
@@ -1029,11 +1041,11 @@ remote-cert-tls server
 # Enforce TLS 1.3 for stronger security
 tls-version-min 1.3
 # Specify the TLS cipher suite for the control channel
-tls-cipher TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384
-# Use AES-256-GCM for data encryption (fast and secure)
-cipher AES-256-GCM
-# Use SHA512 for HMAC message authentication to ensure data integrity
-auth SHA512
+tls-cipher ${CONTROL_CHANNEL_ENCRYPTION}
+# Use ${DATA_CHANNEL_ENCRYPTION} for data encryption (fast and secure)
+cipher ${DATA_CHANNEL_ENCRYPTION}
+# Use ${HMAC_ALGORITHM} for HMAC message authentication to ensure data integrity
+auth ${HMAC_ALGORITHM}
 # Disable cipher negotiation to enforce the chosen ciphers
 #- ncp-disable
 
