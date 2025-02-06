@@ -916,7 +916,7 @@ ifconfig-pool-persist /etc/openvpn/ipp.txt
 # - Certificate & Key Files -
 
 # Path to the Certificate Authority (CA) certificate
-ca /etc/openvpn/server/ca.crt
+ca /etc/openvpn/easy-rsa/pki/ca.crt
 # Path to the server's certificate
 cert /etc/openvpn/easy-rsa/pki/issued/server.crt
 # Path to the server's private key
@@ -945,7 +945,7 @@ ecdh-curve secp521r1
 # Use SHA512 for HMAC message authentication to ensure data integrity
 auth SHA512
 # Enforce the above cipher suite without further negotiation
-ncp-disable
+#- ncp-disable
 
 # - Connection & Performance Settings -
 
@@ -954,7 +954,7 @@ fast-io
 # Ping every 10 seconds; mark connection down after 60 seconds without a response
 keepalive 10 60
 # Disable compression to mitigate known vulnerabilities (e.g., VORACLE)
-compress disable
+#- compress disable
 # Force key renegotiation every 3600 seconds (1 hour) for forward secrecy
 reneg-sec 3600
 # Send explicit exit notifications to clients upon server restart or shutdown
@@ -969,7 +969,7 @@ group nogroup
 # Allow execution of external scripts with safe restrictions
 script-security 2
 # Run OpenVPN in a chroot jail for additional isolation (ensure this directory is properly set up)
-chroot /etc/openvpn/chroot
+#- chroot /etc/openvpn/chroot
 
 # - Logging & Debugging -
 
@@ -981,6 +981,10 @@ verb 0
     # Put the server config into the server config file.
     echo -e "${OPEN_VPN_SERVER_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CONFIG}
 
+    # Delete the OpenVPN client configuration directory if it exist.
+    if [ -d "${OPENVPN_SERVER_CLIENT_DIRECTORY}" ]; then
+      rm -rf ${OPENVPN_SERVER_CLIENT_DIRECTORY}
+    fi
     # Create the OpenVPN client configuration directory if it doesn't exist.
     if [ ! -d "${OPENVPN_SERVER_CLIENT_DIRECTORY}" ]; then
       mkdir --parents ${OPENVPN_SERVER_CLIENT_DIRECTORY}
