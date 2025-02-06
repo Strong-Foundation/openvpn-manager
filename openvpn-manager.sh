@@ -324,6 +324,7 @@ function headless_install() {
   if [ "${HEADLESS_INSTALL}" == true ]; then
     SERVER_HOST_V4_SETTINGS=${SERVER_HOST_V4_SETTINGS=1}   # Default to 1 (IPv4)
     SERVER_HOST_V6_SETTINGS=${SERVER_HOST_V6_SETTINGS=1}   # Default to 1 (IPv6)
+    SERVER_HOST_SETTINGS=${SERVER_HOST_SETTINGS=1}         # Default to 1 (IPv4)
     PROTOCOL_CHOICE=${PROTOCOL_CHOICE=1}                   # Default to 1 (UDP as primary, TCP as secondary)
     SERVER_PORT_SETTINGS=${SERVER_PORT_SETTINGS=1}         # Default to 1 (1194)
     DNS_PROVIDER_SETTINGS=${DNS_PROVIDER_SETTINGS=1}       # Default to 1 (Unbound)
