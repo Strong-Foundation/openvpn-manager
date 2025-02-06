@@ -1073,27 +1073,19 @@ verb 0
 
 # The CA certificate verifies the server's certificate and ensures it's signed by a trusted authority
 <ca>
------BEGIN CERTIFICATE-----
-[PASTE YOUR CA CERTIFICATE CONTENT HERE]
------END CERTIFICATE-----
+#- cat /etc/openvpn/easy-rsa/pki/ca.crt
 </ca>
 # The client certificate authenticates the client to the server during the TLS handshake
 <cert>
------BEGIN CERTIFICATE-----
-[PASTE YOUR CLIENT CERTIFICATE CONTENT HERE]
------END CERTIFICATE-----
+#- sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/client-1.crt
 </cert>
 # The client's private key proves ownership of the client certificate during the TLS handshake
 <key>
------BEGIN PRIVATE KEY-----
-[PASTE YOUR ENCRYPTED CLIENT PRIVATE KEY HERE]
------END PRIVATE KEY-----
+#- cat /etc/openvpn/easy-rsa/pki/private/client-1.key
 </key>
 # The TLS-crypt key secures the control channel and protects against attacks like DoS and traffic analysis
 <tls-crypt>
------BEGIN OpenVPN Static key V1-----
-[PASTE YOUR TLS-CRYPT KEY CONTENT HERE]
------END OpenVPN Static key V1-----
+#- cat /etc/openvpn/server/tls-crypt-v2.key
 </tls-crypt>
 "
     # Put the client config into the client config file.
