@@ -27,7 +27,7 @@ CMD ["sleep", "infinity"]
 # docker build -f Dockerfile.server -t openvpn-server .
 
 # Run the Container
-# docker run -d --name openvpn-server --cap-add=NET_ADMIN -p 1194:1194/udp openvpn-server
+# docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name openvpn-server --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp openvpn-server
 
 # Access the Running Container
 # docker exec -it openvpn-server bash
