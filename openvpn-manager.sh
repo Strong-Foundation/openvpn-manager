@@ -647,14 +647,14 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     if [ "${INSTALL_UNBOUND}" == true ]; then
       if [ ! -x "$(command -v unbound)" ]; then
         # Check if the root hints file does not exist.
-        if [ ! -f ${UNBOUND_ROOT_HINTS} ]; then
+        if [ ! -f "${UNBOUND_ROOT_HINTS}" ]; then
           # If the root hints file is missing, download it from the specified URL.
           LOCAL_UNBOUND_ROOT_HINTS_COPY=$(curl "${UNBOUND_ROOT_SERVER_CONFIG_URL}")
         fi
         # Check if we are install unbound blocker
         if [ "${INSTALL_BLOCK_LIST}" == true ]; then
           # Check if the block list file does not exist.
-          if [ ! -f ${UNBOUND_CONFIG_HOST} ]; then
+          if [ ! -f "${UNBOUND_CONFIG_HOST}" ]; then
             # If the block list file is missing, download it from the specified URL.
             LOCAL_UNBOUND_BLOCKLIST_COPY=$(curl "${UNBOUND_CONFIG_HOST_URL}" | awk '{print "local-zone: \""$1"\" always_refuse"}')
           fi
@@ -675,9 +675,9 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
         fi
       fi
       # Configure Unbound to use the auto-trust-anchor-file.
-      unbound-anchor -a ${UNBOUND_ANCHOR}
+      unbound-anchor -a "${UNBOUND_ANCHOR}"
       # Configure Unbound to use the root hints file.
-      printf "%s" "${LOCAL_UNBOUND_ROOT_HINTS_COPY}" >${UNBOUND_ROOT_HINTS}
+      printf "%s" "${LOCAL_UNBOUND_ROOT_HINTS_COPY}" >"${UNBOUND_ROOT_HINTS}"
       # Configure Unbound settings.
       # The settings are stored in a temporary variable and then written to the Unbound configuration file.
       # If INSTALL_BLOCK_LIST is true, include a block list in the Unbound configuration.
@@ -723,11 +723,11 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 \tprefetch: yes
 \tqname-minimisation: yes
 \tprefetch-key: yes"
-      echo -e "${UNBOUND_TEMP_INTERFACE_INFO}" | awk '!seen[$0]++' >${UNBOUND_CONFIG}
+      echo -e "${UNBOUND_TEMP_INTERFACE_INFO}" | awk '!seen[$0]++' >"${UNBOUND_CONFIG}"
       # Check if we are installing a block list.
       if [ "${INSTALL_BLOCK_LIST}" == true ]; then
         # Include the block list in the Unbound configuration.
-        echo -e "\tinclude: ${UNBOUND_CONFIG_HOST}" >>${UNBOUND_CONFIG}
+        echo -e "\tinclude: ${UNBOUND_CONFIG_HOST}" >>"${UNBOUND_CONFIG}"
       fi
       # If INSTALL_BLOCK_LIST is true, make the unbound directory.
       if [ "${INSTALL_BLOCK_LIST}" == true ]; then
@@ -740,21 +740,21 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       # If the block list is enabled, configure Unbound to use the block list.
       if [ "${INSTALL_BLOCK_LIST}" == true ]; then
         # Write the block list to the Unbound configuration block file.
-        printf "%s" "${LOCAL_UNBOUND_BLOCKLIST_COPY}" >${UNBOUND_CONFIG_HOST}
+        printf "%s" "${LOCAL_UNBOUND_BLOCKLIST_COPY}" >"${UNBOUND_CONFIG_HOST}"
       fi
       # Update ownership of Unbound's root directory.
-      chown --recursive "${USER}":"${USER}" ${UNBOUND_ROOT}
+      chown --recursive "${USER}":"${USER}" "${UNBOUND_ROOT}"
       # Update the resolv.conf file to use Unbound.
       if [ -f "${RESOLV_CONFIG_OLD}" ]; then
-        rm --force ${RESOLV_CONFIG_OLD}
+        rm --force "${RESOLV_CONFIG_OLD}"
       fi
       if [ -f "${RESOLV_CONFIG}" ]; then
-        chattr -i ${RESOLV_CONFIG}
-        mv ${RESOLV_CONFIG} ${RESOLV_CONFIG_OLD}
+        chattr -i "${RESOLV_CONFIG}"
+        mv "${RESOLV_CONFIG}" "${RESOLV_CONFIG_OLD}"
       fi
-      echo "nameserver 127.0.0.1" >${RESOLV_CONFIG}
-      echo "nameserver ::1" >>${RESOLV_CONFIG}
-      chattr +i ${RESOLV_CONFIG}
+      echo "nameserver 127.0.0.1" >"${RESOLV_CONFIG}"
+      echo "nameserver ::1" >>"${RESOLV_CONFIG}"
+      chattr +i "${RESOLV_CONFIG}"
       # Set CLIENT_DNS to use gateway addresses.
       CLIENT_DNS="${GATEWAY_ADDRESS_V4},${GATEWAY_ADDRESS_V6}"
     fi
@@ -996,17 +996,17 @@ verb 0"
     systemctl enable openvpn@server
     systemctl restart openvpn@server
 
+    # Generate the client certificate and key.
+    easyrsa build-client-full "${CLIENT_NAME}" nopass
+
     # Read the content of the certificate authority (CA) file into a variable
     OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY})
     # Extract and store the content of the client certificate (specified by CLIENT_NAME) from the .crt file
-    OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/${CLIENT_NAME}.crt)
+    OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/"${CLIENT_NAME}".crt)
     # Read the content of the private key for the client (specified by CLIENT_NAME) into a variable
-    OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/${CLIENT_NAME}.key)
+    OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/"${CLIENT_NAME}".key)
     # Read the content of the TLS crypt key into a variable
     OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT=$(cat ${OPENVPN_SERVER_TLS_CRYPT_KEY})
-
-    # Generate the client certificate and key.
-    easyrsa build-client-full ${CLIENT_NAME} nopass
 
     # Create the OpenVPN client configuration file with the specified settings.
     OPEN_VPN_CLIENT_CONFIG="# - Client Basic Settings -
@@ -1106,7 +1106,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 </tls-crypt>
 "
     # Put the client config into the client config file.
-    echo -e "${OPEN_VPN_CLIENT_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn
+    echo -e "${OPEN_VPN_CLIENT_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CLIENT_DIRECTORY}/"${CLIENT_NAME}".ovpn
   }
 
   # Install openvpn
@@ -1118,85 +1118,99 @@ else
   # Function to display openvpn configuration
   function display_openvpn_config() {
     # Display the OpenVPN configuration file
+    echo "display_openvpn_config"
   }
 
   # Function to start the OpenVPN service
   function start_openvpn_service() {
     # Start the OpenVPN service
+    echo "start_openvpn_service"
   }
 
   # Function to stop the OpenVPN service
   function stop_openvpn_service() {
     # Stop the OpenVPN service
+    echo "stop_openvpn_service"
   }
 
   # Function to restart the OpenVPN service
   function restart_openvpn_service() {
     # Restart the OpenVPN service
+    echo "restart_openvpn_service"
   }
 
   # Function to add a new OpenVPN client
   function add_openvpn_client() {
-    # Add a new OpenVPN client
-    CA_CRT_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/ca.crt)
     # Generate the client certificate and key.
     easyrsa build-client-full client1 nopass
+    echo "add_openvpn_client"
   }
 
   # Function to remove an OpenVPN client
   function remove_openvpn_client() {
     # Remove an OpenVPN client
     ./easyrsa revoke client1
+    echo "remove_openvpn_client"
   }
 
   # Function to reinstall the OpenVPN service
   function reinstall_openvpn() {
     # Reinstall the OpenVPN service
+    echo "reinstall_openvpn"
   }
 
   # Function to uninstall the OpenVPN service
   function uninstall_openvpn() {
     # Uninstall the OpenVPN service
+    echo "uninstall_openvpn"
   }
 
   # Function to update the OpenVPN management script
   function update_openvpn_script() {
     # Update the OpenVPN management script
+    echo "update_openvpn_script"
   }
 
   # Function to backup the OpenVPN configuration
   function backup_openvpn_config() {
     # Backup the OpenVPN configuration
+    echo "backup_openvpn_config"
   }
 
   # Function to restore the OpenVPN configuration
   function restore_openvpn_config() {
     # Restore the OpenVPN configuration
+    echo "restore_openvpn_config"
   }
 
   # Function to update the OpenVPN interface IP
   function update_openvpn_interface_ip() {
     # Update the OpenVPN interface IP
+    echo "update_openvpn_interface_ip"
   }
 
   # Function to update the OpenVPN interface port
   function update_openvpn_interface_port() {
     # Update the OpenVPN interface port
+    echo "update_openvpn_interface_port"
   }
 
   # Function to remove all OpenVPN clients
   function remove_all_openvpn_clients() {
     # Remove all OpenVPN clients
+    echo "remove_all_openvpn_clients"
   }
 
   # Function to show OpenVPN client configuration
   function show_openvpn_client_configuration() {
     # Show OpenVPN client configuration
+    echo "show_openvpn_client_configuration"
   }
 
   # Function to verify OpenVPN configuration
   function verify_openvpn_configuration() {
     # Verify OpenVPN configuration
+    echo "verify_openvpn_configuration"
   }
 
   # Function to manage OpenVPN service and configuration
