@@ -149,6 +149,25 @@ check_disk_space
 CURRENT_FILE_PATH=$(realpath "${0}")
 # Set the TUN_PATH variable to the path of the TUN device
 LOCAL_TUN_PATH="/dev/net/tun"
+# Assigns a path for the DNS resolver configuration file
+RESOLV_CONFIG="/etc/resolv.conf"
+# Assigns a path for the old DNS resolver configuration file
+RESOLV_CONFIG_OLD="${RESOLV_CONFIG}.old"
+# Assigns a path for Unbound DNS resolver
+UNBOUND_ROOT="/etc/unbound"
+# Assigns a path for the Unbound configuration file
+UNBOUND_CONFIG="${UNBOUND_ROOT}/unbound.conf"
+# Assigns a path for the Unbound root hints file
+UNBOUND_ROOT_HINTS="${UNBOUND_ROOT}/root.hints"
+# Assigns a path for the Unbound anchor file
+UNBOUND_ANCHOR="/var/lib/unbound/root.key"
+if { [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ]; }; then
+  UNBOUND_ANCHOR="${UNBOUND_ROOT}/root.key"
+fi
+# Assigns a path for the Unbound configuration directory
+UNBOUND_CONFIG_DIRECTORY="${UNBOUND_ROOT}/unbound.conf.d"
+# Assigns a path for the Unbound hosts configuration file
+UNBOUND_CONFIG_HOST="${UNBOUND_CONFIG_DIRECTORY}/hosts.conf"
 # Set the path to the opnevpn server directory
 OPENVPN_DIRECTORY="/etc/openvpn"
 # Set the path to the openvpn server directory
@@ -177,6 +196,21 @@ OPENVPN_SERVER_SSL_CERTIFICATE="${OPENVPN_PKI_DIRECTORY}/issued/server.crt"
 OPENVPN_SERVER_SSL_KEY="${OPENVPN_PKI_DIRECTORY}/private/server.key"
 # Set the path to the openvpn server ssl certificate revocation list
 OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST="${OPENVPN_PKI_DIRECTORY}/crl.pem"
+# Generate a random number within the range 1-1 (always 1) and use it in a case statement
+case $(shuf --input-range=1-1 --head-count=1) in
+1)
+  # Set the URL for the Unbound root server configuration file
+  UNBOUND_ROOT_SERVER_CONFIG_URL="https://raw.githubusercontent.com/Strong-Foundation/openvpn-manager/refs/heads/main/assets/named.cache"
+  ;; # End of case statement
+esac
+
+# Generate a random number within the range 1-1 (always 1) and use it in a case statement
+case $(shuf --input-range=1-1 --head-count=1) in
+1)
+  # Set the URL for the Unbound host configuration file
+  UNBOUND_CONFIG_HOST_URL="https://raw.githubusercontent.com/Strong-Foundation/openvpn-manager/refs/heads/main/assets/hosts"
+  ;; # End of case statement
+esac
 
 # Set the environment variable to avoid interactive prompts
 export DEBIAN_FRONTEND=noninteractive
