@@ -34,4 +34,4 @@ jobs:
 
       # Step 3: Install OpenVPN Manager
       - name: Install OpenVPN Manager
-        run: sudo bash openvpn-manager.sh --install
+        run: sudo bash -x openvpn-manager.sh --install
