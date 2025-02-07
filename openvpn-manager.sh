@@ -173,7 +173,7 @@ OPENVPN_DIRECTORY="/etc/openvpn"
 # Set the path to the openvpn server directory
 OPENVPN_SERVER_DIRECTORY="${OPENVPN_DIRECTORY}/server"
 # Set the path to the opnevpn server client directory
-OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_DIRECTORY}/clients"
+OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_DIRECTORY}/ccd"
 # Set the path to the openvpn server config
 OPENVPN_SERVER_CONFIG="${OPENVPN_DIRECTORY}/server.conf"
 # Set the path to the openvpn easy-rsa directory
@@ -896,15 +896,15 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Change the working directory to the Easy-RSA directory.
     cd ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
     # Initialize the Public Key Infrastructure (PKI) directory, setting up the necessary structure for key and certificate management. (pki)
-    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} init-pki
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} init-pki
     # Build the Certificate Authority (CA). This creates the root certificate and private key for signing other certificates. (ca.crt)
-    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} build-ca nopass
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-ca nopass
     # Build a server certificate for OpenVPN with Easy-RSA, skipping the passphrase. This generates the server's public certificate and private key. (server.crt and server.key)
-    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} build-server-full server nopass
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-server-full server nopass
     # These parameters enhance the security of the connection by enabling Perfect Forward Secrecy (PFS). (ta.key)
-    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} gen-dh
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} gen-dh
     # Generate a certificate revocation list (CRL) for OpenVPN using Easy-RSA. This list is used to revoke certificates that are no longer valid. (crl.pem)
-    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} gen-crl
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} gen-crl
     # Make the (crt.pem) file readable by the OpenVPN server.
     chmod 644 ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST}
     # Generate the TLS Auth Key
@@ -1045,7 +1045,7 @@ verb 0"
     systemctl restart openvpn@server
 
     # Generate the client certificate and key.
-    easyrsa build-client-full "${CLIENT_NAME}" nopass
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-client-full "${CLIENT_NAME}" nopass
 
     # Read the content of the certificate authority (CA) file into a variable
     OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY})
