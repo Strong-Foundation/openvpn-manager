@@ -1242,7 +1242,7 @@ ${OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT}
 ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 </tls-crypt>"
     # Put the client config into the client config file.
-    echo -e "${OPEN_VPN_CLIENT_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CLIENT_DIRECTORY}/"${CLIENT_NAME}".ovpn
+    echo -e "${OPEN_VPN_CLIENT_CONFIG}" >"${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
   }
 
   # Install openvpn
