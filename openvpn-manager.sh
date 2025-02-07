@@ -191,7 +191,7 @@ OPENVPN_SERVER_CERTIFICATE_AUTHORTY="${OPENVPN_PKI_DIRECTORY}/ca.crt"
 # Set the path to the openvpn server diffie Hellman parameters file
 OPENVPN_SERVER_DIFFIE_HELLMAN_PARAMETERS="${OPENVPN_PKI_DIRECTORY}/dh.pem"
 # Set the path to the openvpn server tls-crypt key
-OPENVPN_SERVER_TLS_CRYPT_KEY="${OPENVPN_SERVER_DIRECTORY}/tls-crypt-v2.key"
+OPENVPN_SERVER_TLS_CRYPT_KEY="${OPENVPN_SERVER_DIRECTORY}/tls-crypt.key"
 # Set the path to the openvpn server ssl certificate
 OPENVPN_SERVER_SSL_CERTIFICATE="${OPENVPN_PKI_DIRECTORY}/issued/server.crt"
 # Set the path to the openvpn server ssl key
@@ -532,19 +532,19 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Set the protocols based on the user's choice
     case ${PROTOCOL_CHOICE} in
     1)
-      PRIMARY_PROTOCOL="udp6"
-      SECONDARY_PROTOCOL="tcp6"
+      PRIMARY_PROTOCOL="udp4"
+      SECONDARY_PROTOCOL="tcp4"
       ;;
     2)
-      PRIMARY_PROTOCOL="tcp6"
-      SECONDARY_PROTOCOL="udp6"
+      PRIMARY_PROTOCOL="tcp4"
+      SECONDARY_PROTOCOL="udp4"
       ;;
     3)
-      PRIMARY_PROTOCOL="udp6"
+      PRIMARY_PROTOCOL="udp4"
       SECONDARY_PROTOCOL="none"
       ;;
     4)
-      PRIMARY_PROTOCOL="tcp6"
+      PRIMARY_PROTOCOL="tcp4"
       SECONDARY_PROTOCOL="none"
       ;;
     esac
@@ -1019,8 +1019,6 @@ server 10.0.0.0 255.255.255.0
 server-ipv6 fd00:0:0:1::/64
 # Use subnet topology for individual client IP assignment
 topology subnet
-# Enable IPv6 on the tunnel interface
-tun-ipv6
 # Push IPv6 support to connecting clients
 push \"tun-ipv6\"
 # Redirect all IPv6 traffic through the VPN tunnel
@@ -1066,8 +1064,8 @@ crl-verify ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST}
 
 # - TLS & Cryptographic Settings -
 
-# Use tls-crypt-v2 for control channel encryption/authentication (requires OpenVPN 2.5+)
-tls-crypt-v2 ${OPENVPN_SERVER_TLS_CRYPT_KEY}
+# Use tls-crypt for control channel encryption/authentication (requires OpenVPN 2.5+)
+tls-crypt ${OPENVPN_SERVER_TLS_CRYPT_KEY}
 # Enable TLS server mode for secure client connections
 tls-server
 # Enforce TLS 1.3 for the best available security
@@ -1079,20 +1077,15 @@ cipher ${DATA_CHIPER}
 # Allow ${DATA_CHANNEL_ENCRYPTION} for data channel encryption (fast and secure)
 data-ciphers ${DATA_CHANNEL_ENCRYPTION}
 # Use the ${CERTIFICATE_ECDSA_CURVE} elliptic curve for ECDH key exchange (provides strong security)
-ecdh-curve ${CERTIFICATE_ECDSA_CURVE}
+tls-groups ${CERTIFICATE_ECDSA_CURVE}
 # Use ${HMAC_ALGORITHM} for HMAC message authentication to ensure data integrity
 auth ${HMAC_ALGORITHM}
-# Enforce the above cipher suite without further negotiation
-#- ncp-disable
-
 # - Connection & Performance Settings -
 
 # Enable fast I/O to improve performance by reducing system calls
 fast-io
 # Ping every 10 seconds; mark connection down after 60 seconds without a response
 keepalive 10 60
-# Disable compression to mitigate known vulnerabilities (e.g., VORACLE)
-#- compress disable
 # Force key renegotiation every 3600 seconds (1 hour) for forward secrecy
 reneg-sec 3600
 # Send explicit exit notifications to clients upon server restart or shutdown
@@ -1106,8 +1099,6 @@ user nobody
 group nogroup
 # Allow execution of external scripts with safe restrictions
 script-security 2
-# Run OpenVPN in a chroot jail for additional isolation (ensure this directory is properly set up)
-#- chroot /etc/openvpn/chroot
 
 # - Logging & Debugging -
 
@@ -1152,7 +1143,7 @@ client
 # Specify the OpenVPN protocol and use UDP for better performance
 proto ${PRIMARY_PROTOCOL}
 # Define the remote server IP or hostname and the port number
-remote ${SERVER_HOST} 1194
+remote ${SERVER_HOST} ${SERVER_PORT}
 # Use a tunnel device (tun) instead of an ethernet bridge (tap)
 dev tun
 
@@ -1170,23 +1161,13 @@ tls-cipher ${CONTROL_CHANNEL_ENCRYPTION}
 cipher ${DATA_CHANNEL_ENCRYPTION}
 # Use ${HMAC_ALGORITHM} for HMAC message authentication to ensure data integrity
 auth ${HMAC_ALGORITHM}
-# Disable cipher negotiation to enforce the chosen ciphers
-#- ncp-disable
 
 # - Connection Settings -
 
-# Persist authentication keys across restarts to avoid re-authentication
-#- persist-key
-# Keep the tunnel open across restarts to prevent reconnection delays
-#- persist-tun
-# Automatically retry resolving the server address if the connection fails
-#- resolv-retry infinite
 # Do not bind to a specific local port (let the OS choose)
 nobind
 # Send a ping every 10 seconds; disconnect if no response within 60 seconds
 keepalive 10 60
-# Notify the server explicitly when disconnecting
-#- explicit-exit-notify 2
 
 # - Routing & DNS -
 
@@ -1211,15 +1192,9 @@ pull-filter ignore \"ifconfig-ipv6\"
 
 # Automatically disconnect if inactive for 15 minutes (900 seconds)
 inactive 900
-# Allow mobile devices to sleep while maintaining a stable connection
-#- ping-timer-rem
-# Reduce power consumption by decreasing keepalive frequency
-#- keepalive 10 120
 
 # - Compression & Logging -
 
-# Disable compression to prevent security vulnerabilities (e.g., VORACLE attack)
-#- compress disable
 # Set logging verbosity (increase for debugging, lower for less output)
 verb 0
 
