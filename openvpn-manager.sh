@@ -430,13 +430,13 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Call the set_ipv6_subnet function to set the custom IPv6 subnet
   set_ipv6_subnet
 
-  # Define the private subnet mask for the IPv4 network used by the WireGuard interface
+  # Define the private subnet mask for the IPv4 network used by the OpenVPN interface
   PRIVATE_SUBNET_MASK_V4=$(echo "${PRIVATE_SUBNET_V4}" | cut --delimiter="/" --fields=2) # Get the subnet mask of IPv4
-  # Define the IPv4 gateway for the WireGuard interface
+  # Define the IPv4 gateway for the OpenVPN interface
   GATEWAY_ADDRESS_V4=$(echo "${PRIVATE_SUBNET_V4}" | cut --delimiter="." --fields=1-3).1 # Get the gateway address of IPv4
-  # Define the private subnet mask for the IPv6 network used by the WireGuard interface
+  # Define the private subnet mask for the IPv6 network used by the OpenVPN interface
   PRIVATE_SUBNET_MASK_V6=$(echo "${PRIVATE_SUBNET_V6}" | cut --delimiter="/" --fields=2) # Get the subnet mask of IPv6
-  # Define the IPv6 gateway for the WireGuard interface
+  # Define the IPv6 gateway for the OpenVPN interface
   GATEWAY_ADDRESS_V6=$(echo "${PRIVATE_SUBNET_V6}" | cut --delimiter=":" --fields=1-3)::1 # Get the gateway address of IPv6
   # Retrieve the networking configuration details
   get_network_information
@@ -661,7 +661,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # If the custom DNS option is enabled, proceed with the DNS selection.
     if [ "${CUSTOM_DNS}" == true ]; then
       # Present the user with a list of DNS providers to choose from.
-      echo "Select the DNS provider you wish to use with your WireGuard connection:"
+      echo "Select the DNS provider you wish to use with your OpenVPN connection:"
       echo "  1) Cloudflare (Recommended)"
       echo "  2) AdGuard"
       echo "  3) NextDNS"
