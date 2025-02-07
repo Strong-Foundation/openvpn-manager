@@ -1003,7 +1003,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
-local ::
+local 0.0.0.0
 # Use port ${SERVER_PORT} for incoming VPN connections
 port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
