@@ -1054,9 +1054,9 @@ ifconfig-pool-persist ${IFCONFIG_POOL_PERSIST_FILE}
 
 # Path to the Certificate Authority (CA) certificate
 ca ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY}
-# Path to the server's certificate
+# Path to the servers certificate
 cert ${OPENVPN_SERVER_SSL_CERTIFICATE}
-# Path to the server's private key
+# Path to the servers private key
 key ${OPENVPN_SERVER_SSL_KEY}
 # Path to Diffie-Hellman parameters for key exchange
 dh ${OPENVPN_SERVER_DIFFIE_HELLMAN_PARAMETERS}
@@ -1224,7 +1224,7 @@ verb 0
 
 # - Embedded Certificates & Keys -
 
-# The CA certificate verifies the server's certificate and ensures it's signed by a trusted authority
+# The CA certificate verifies the servers certificate and ensures its signed by a trusted authority
 <ca>
 ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT}
 </ca>
@@ -1232,15 +1232,14 @@ ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT}
 <cert>
 ${OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT}
 </cert>
-# The client's private key proves ownership of the client certificate during the TLS handshake
+# The client private key proves ownership of the client certificate during the TLS handshake
 <key>
 ${OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT}
 </key>
 # The TLS-crypt key secures the control channel and protects against attacks like DoS and traffic analysis
 <tls-crypt>
 ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
-</tls-crypt>
-"
+</tls-crypt>"
     # Put the client config into the client config file.
     echo -e "${OPEN_VPN_CLIENT_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CLIENT_DIRECTORY}/"${CLIENT_NAME}".ovpn
   }
