@@ -67,11 +67,11 @@ function installing_system_requirements() {
   # Check if the current Linux distribution is supported
   if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
     # Check if required packages are already installed
-    if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v sudo)" ] || [ ! -x "$(command -v bash)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ] || [ ! -x "$(command -v systemd-detect-virt)" ] || [ ! -x "$(command -v ps)" ] || [ ! -x "$(command -v lsof)" ]; }; then
+    if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v sudo)" ] || [ ! -x "$(command -v bash)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ] || [ ! -x "$(command -v systemd-detect-virt)" ] || [ ! -x "$(command -v ps)" ] || [ ! -x "$(command -v lsof)" ] || [ ! -x "$(command -v haveged)" ]; }; then
       # Install required packages depending on the Linux distribution
       if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
         apt-get update
-        apt-get install curl sudo bash coreutils jq iproute2 systemd procps lsof -y
+        apt-get install curl sudo bash coreutils jq iproute2 systemd procps lsof haveged -y
       fi
     fi
   else
@@ -174,6 +174,8 @@ OPENVPN_DIRECTORY="/etc/openvpn"
 OPENVPN_SERVER_DIRECTORY="${OPENVPN_DIRECTORY}/server"
 # Set the path to the opnevpn server client directory
 OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_DIRECTORY}/ccd"
+# Set the path to the openvpn IP persist file
+IFCONFIG_POOL_PERSIST_FILE="${OPENVPN_SERVER_DIRECTORY}/ipp.txt"
 # Set the path to the openvpn server config
 OPENVPN_SERVER_CONFIG="${OPENVPN_DIRECTORY}/server.conf"
 # Set the path to the openvpn easy-rsa directory
@@ -890,6 +892,13 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # HMAC digest algorithm for authentication
   HMAC_ALGORITHM="SHA512" # High-security HMAC (Hash-based Message Authentication Code) algorithm
 
+  if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+    systemctl enable --now haveged
+    systemctl start haveged
+  elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+    service haveged start
+  fi
+
   # Function to install openvpn.
   function install_openvpn() {
     # Check if required packages are already installed
@@ -1033,13 +1042,13 @@ push \"block-outside-dns\"
 # - Client Configuration & Persistence -
 
 # Specify the directory for per-client configuration files
-client-config-dir /etc/openvpn/clients
+client-config-dir ${OPENVPN_SERVER_CLIENT_DIRECTORY}
 # Do not re-read key files on restart (speeds up reconnections)
 persist-key
 # Keep the tunnel device open across restarts
 persist-tun
 # Persist client IP assignments between sessions
-ifconfig-pool-persist /etc/openvpn/ipp.txt
+ifconfig-pool-persist ${IFCONFIG_POOL_PERSIST_FILE}
 
 # - Certificate & Key Files -
 
