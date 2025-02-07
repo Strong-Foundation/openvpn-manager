@@ -967,6 +967,15 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     cd ${OPENVPN_SERVER_EASY_RSA_DIRECTORY}
     # Initialize the Public Key Infrastructure (PKI) directory, setting up the necessary structure for key and certificate management. (pki)
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} init-pki
+    # Find all files in the OpenVPN directory that start with "vars"
+    ALL_VARS_FILES=$(find ${OPENVPN_DIRECTORY} -type f -name "vars*")
+    # Loop through each file found
+    for INVALID_VARS_FILE in ${ALL_VARS_FILES}; do
+      # Check if the file is NOT the valid OpenVPN variables file
+      if [[ "${INVALID_VARS_FILE}" != "${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}" ]]; then
+        rm -f "${INVALID_VARS_FILE}" # Remove the invalid file
+      fi
+    done
     # Build the Certificate Authority (CA). This creates the root certificate and private key for signing other certificates. (ca.crt)
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-ca nopass
     # Build a server certificate for OpenVPN with Easy-RSA, skipping the passphrase. This generates the server's public certificate and private key. (server.crt and server.key)
