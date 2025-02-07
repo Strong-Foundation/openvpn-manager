@@ -30,8 +30,8 @@ jobs:
 
       # Step 2: Install required tools
       - name: Install Required Tools
-        run: apt-get update && apt-get install sudo bash curl -y
+        run: apt-get update
 
       # Step 3: Install OpenVPN Manager
       - name: Install OpenVPN Manager
-        run: sudo bash openvpn-manager.sh
+        run: bash openvpn-manager.sh --install
