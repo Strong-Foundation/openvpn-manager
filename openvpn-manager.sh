@@ -356,14 +356,16 @@ usage "$@"
 function headless_install() {
   # If headless installation is specified, set default values for configuration variables.
   if [ "${HEADLESS_INSTALL}" == true ]; then
-    SERVER_HOST_V4_SETTINGS=${SERVER_HOST_V4_SETTINGS=1}   # Default to 1 (IPv4)
-    SERVER_HOST_V6_SETTINGS=${SERVER_HOST_V6_SETTINGS=1}   # Default to 1 (IPv6)
-    SERVER_HOST_SETTINGS=${SERVER_HOST_SETTINGS=1}         # Default to 1 (IPv4)
-    PROTOCOL_CHOICE=${PROTOCOL_CHOICE=1}                   # Default to 1 (UDP as primary, TCP as secondary)
-    SERVER_PORT_SETTINGS=${SERVER_PORT_SETTINGS=1}         # Default to 1 (1194)
-    DNS_PROVIDER_SETTINGS=${DNS_PROVIDER_SETTINGS=1}       # Default to 1 (Unbound)
-    CONTENT_BLOCKER_SETTINGS=${CONTENT_BLOCKER_SETTINGS=1} # Default to 1 (Yes)
-    CLIENT_NAME=${CLIENT_NAME=$(openssl rand -hex 5)}      # Set the client name
+    PRIVATE_SUBNET_V4_SETTINGS=${PRIVATE_SUBNET_V4_SETTINGS=1} # Default to 1 (10.0.0.0/8)
+    PRIVATE_SUBNET_V6_SETTINGS=${PRIVATE_SUBNET_V6_SETTINGS=1} # Default to 1 (fd00:00:00::0/8)
+    SERVER_HOST_V4_SETTINGS=${SERVER_HOST_V4_SETTINGS=1}       # Default to 1 (IPv4)
+    SERVER_HOST_V6_SETTINGS=${SERVER_HOST_V6_SETTINGS=1}       # Default to 1 (IPv6)
+    SERVER_HOST_SETTINGS=${SERVER_HOST_SETTINGS=1}             # Default to 1 (IPv4)
+    PROTOCOL_CHOICE=${PROTOCOL_CHOICE=1}                       # Default to 1 (UDP as primary, TCP as secondary)
+    SERVER_PORT_SETTINGS=${SERVER_PORT_SETTINGS=1}             # Default to 1 (1194)
+    DNS_PROVIDER_SETTINGS=${DNS_PROVIDER_SETTINGS=1}           # Default to 1 (Unbound)
+    CONTENT_BLOCKER_SETTINGS=${CONTENT_BLOCKER_SETTINGS=1}     # Default to 1 (Yes)
+    CLIENT_NAME=${CLIENT_NAME=$(openssl rand -hex 5)}          # Set the client name
   fi
 }
 
