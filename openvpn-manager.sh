@@ -373,6 +373,74 @@ headless_install
 # Set up the openvpn, if config it isn't already there.
 if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
+  # Define a function to set a custom IPv4 subnet
+  function set_ipv4_subnet() {
+    # Prompt the user for the desired IPv4 subnet
+    echo "Please specify the IPv4 subnet you want to use for the OpenVPN interface. This should be a private subnet that is not in use elsewhere on your network. For example, you might choose '10.0.0.0/24' if it's not already in use."
+    echo "  1) 10.0.0.0/8 (Recommended)"
+    echo "  2) Custom (Advanced)"
+    # Keep prompting the user until they enter a valid subnet choice
+    until [[ "${PRIVATE_SUBNET_V4_SETTINGS}" =~ ^[1-2]$ ]]; do
+      read -rp "Subnet Choice [1-2]:" -e -i 1 PRIVATE_SUBNET_V4_SETTINGS
+    done
+    # Based on the user's choice, set the private IPv4 subnet
+    case ${PRIVATE_SUBNET_V4_SETTINGS} in
+    1)
+      PRIVATE_SUBNET_V4="10.0.0.0/8" # Set a default OpenVPN IPv4 subnet
+      ;;
+    2)
+      read -rp "Custom IPv4 Subnet:" PRIVATE_SUBNET_V4 # Prompt user for custom subnet
+      if [ -z "${PRIVATE_SUBNET_V4}" ]; then           # If the user did not enter a subnet, set default
+        PRIVATE_SUBNET_V4="10.0.0.0/8"
+      fi
+      ;;
+    esac
+  }
+
+  # Call the function to set the custom IPv4 subnet
+  set_ipv4_subnet
+
+  # Define a function to set a custom IPv6 subnet
+  function set_ipv6_subnet() {
+    # Ask the user which IPv6 subnet they want to use
+    echo "Please specify the IPv6 subnet you want to use for the OpenVPN interface. This should be a private subnet that is not in use elsewhere on your network. For example, you might choose 'fd00::/64' if it's not already in use."
+    echo "  1) fd00:00:00::0/8 (Recommended)"
+    echo "  2) Custom (Advanced)"
+    # Use a loop to ensure the user inputs a valid option
+    until [[ "${PRIVATE_SUBNET_V6_SETTINGS}" =~ ^[1-2]$ ]]; do
+      read -rp "Please choose the IPv6 subnet for your OpenVPN interface [Option 1-2]: " -e -i 1 PRIVATE_SUBNET_V6_SETTINGS
+    done
+    # Use a case statement to set the IPv6 subnet based on the user's choice
+    case ${PRIVATE_SUBNET_V6_SETTINGS} in
+    1)
+      # Use the recommended IPv6 subnet if the user chooses option 1
+      PRIVATE_SUBNET_V6="fd00:00:00::0/8"
+      ;;
+    2)
+      # Ask the user for a custom IPv6 subnet if they choose option 2
+      read -rp "Please enter a custom IPv6 subnet for your OpenVPN interface: " PRIVATE_SUBNET_V6
+      # If the user does not input a subnet, use the recommended one
+      if [ -z "${PRIVATE_SUBNET_V6}" ]; then
+        PRIVATE_SUBNET_V6="fd00:00:00::0/8"
+      fi
+      ;;
+    esac
+  }
+
+  # Call the set_ipv6_subnet function to set the custom IPv6 subnet
+  set_ipv6_subnet
+
+  # Define the private subnet mask for the IPv4 network used by the WireGuard interface
+  PRIVATE_SUBNET_MASK_V4=$(echo "${PRIVATE_SUBNET_V4}" | cut --delimiter="/" --fields=2) # Get the subnet mask of IPv4
+  # Define the IPv4 gateway for the WireGuard interface
+  GATEWAY_ADDRESS_V4=$(echo "${PRIVATE_SUBNET_V4}" | cut --delimiter="." --fields=1-3).1 # Get the gateway address of IPv4
+  # Define the private subnet mask for the IPv6 network used by the WireGuard interface
+  PRIVATE_SUBNET_MASK_V6=$(echo "${PRIVATE_SUBNET_V6}" | cut --delimiter="/" --fields=2) # Get the subnet mask of IPv6
+  # Define the IPv6 gateway for the WireGuard interface
+  GATEWAY_ADDRESS_V6=$(echo "${PRIVATE_SUBNET_V6}" | cut --delimiter=":" --fields=1-3)::1 # Get the gateway address of IPv6
+  # Retrieve the networking configuration details
+  get_network_information
+
   function test_connectivity_v4() {
     echo "How would you like to detect IPv4?"                       # Ask user how to detect IPv4
     echo "  1) Curl (Recommended)"                                  # Option 1: Use Curl for automatic detection
