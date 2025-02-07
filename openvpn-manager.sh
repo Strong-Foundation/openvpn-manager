@@ -1118,7 +1118,7 @@ verb 0"
     # Read the content of the certificate authority (CA) file into a variable
     OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY})
     # Extract and store the content of the client certificate (specified by CLIENT_NAME) from the .crt file
-    OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(sed -n '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/p' /etc/openvpn/easy-rsa/pki/issued/"${CLIENT_NAME}".crt)
+    OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' /etc/openvpn/easy-rsa/pki/issued/"${CLIENT_NAME}".crt)
     # Read the content of the private key for the client (specified by CLIENT_NAME) into a variable
     OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/"${CLIENT_NAME}".key)
     # Read the content of the TLS crypt key into a variable
