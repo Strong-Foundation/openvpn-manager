@@ -168,11 +168,11 @@ fi
 UNBOUND_CONFIG_DIRECTORY="${UNBOUND_ROOT}/unbound.conf.d"
 # Assigns a path for the Unbound hosts configuration file
 UNBOUND_CONFIG_HOST="${UNBOUND_CONFIG_DIRECTORY}/hosts.conf"
-# Set the path to the opnevpn server directory
+# Set the path to the openvpn server directory
 OPENVPN_DIRECTORY="/etc/openvpn"
 # Set the path to the openvpn server directory
 OPENVPN_SERVER_DIRECTORY="${OPENVPN_DIRECTORY}/server"
-# Set the path to the opnevpn server client directory
+# Set the path to the openvpn server client directory
 OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_DIRECTORY}/ccd"
 # Set the path to the openvpn IP persist file
 IFCONFIG_POOL_PERSIST_FILE="${OPENVPN_SERVER_DIRECTORY}/ipp.txt"
@@ -187,7 +187,7 @@ OPENVPN_SERVER_EASY_RSA_SCRIPT="${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/easyrsa"
 # Set the path to the openvpn server easy-rsa variables file
 OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE="${OPENVPN_SERVER_EASY_RSA_DIRECTORY}/vars"
 # Set the path to the openvpn server certificate authority
-OPENVPN_SERVER_CERTIFICATE_AUTHORTY="${OPENVPN_PKI_DIRECTORY}/ca.crt"
+OPENVPN_SERVER_CERTIFICATE_AUTHORITY="${OPENVPN_PKI_DIRECTORY}/ca.crt"
 # Set the path to the openvpn server diffie Hellman parameters file
 OPENVPN_SERVER_DIFFIE_HELLMAN_PARAMETERS="${OPENVPN_PKI_DIRECTORY}/dh.pem"
 # Set the path to the openvpn server tls-crypt key
@@ -1003,7 +1003,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
-local 0.0.0.0
+local ::
 # Use port ${SERVER_PORT} for incoming VPN connections
 port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
@@ -1052,7 +1052,7 @@ ifconfig-pool-persist ${IFCONFIG_POOL_PERSIST_FILE}
 # - Certificate & Key Files -
 
 # Path to the Certificate Authority (CA) certificate
-ca ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY}
+ca ${OPENVPN_SERVER_CERTIFICATE_AUTHORITY}
 # Path to the servers certificate
 cert ${OPENVPN_SERVER_SSL_CERTIFICATE}
 # Path to the servers private key
@@ -1128,7 +1128,7 @@ verb 0"
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-client-full "${CLIENT_NAME}" nopass
 
     # Read the content of the certificate authority (CA) file into a variable
-    OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORTY})
+    OPENVPN_SERVER_CERTIFICATE_AUTHORITY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORITY})
     # Extract and store the content of the client certificate (specified by CLIENT_NAME) from the .crt file
     OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' /etc/openvpn/easy-rsa/pki/issued/"${CLIENT_NAME}".crt)
     # Read the content of the private key for the client (specified by CLIENT_NAME) into a variable
@@ -1202,7 +1202,7 @@ verb 0
 
 # The CA certificate verifies the servers certificate and ensures its signed by a trusted authority
 <ca>
-${OPENVPN_SERVER_CERTIFICATE_AUTHORTY_CONTENT}
+${OPENVPN_SERVER_CERTIFICATE_AUTHORITY_CONTENT}
 </ca>
 # The client certificate authenticates the client to the server during the TLS handshake
 <cert>
