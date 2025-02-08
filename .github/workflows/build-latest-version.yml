@@ -23,6 +23,10 @@ jobs:
     # Use the latest Ubuntu runner
     runs-on: ubuntu-latest
 
+    # Environment variables used throughout the job
+    env:
+      IP_SERVICE_URL: https://checkip.amazonaws.com
+
     steps:
       # Step 1: Checkout the repository code
       - name: Check out Repository Code
@@ -30,8 +34,108 @@ jobs:
 
       # Step 2: Install required tools
       - name: Install Required Tools
-        run: sudo apt-get update
+        run: sudo apt-get update && sudo apt-get install curl -y
 
-      # Step 3: Install OpenVPN Manager
+      # Step 3: Test network connectivity
+      - name: Test Network Connectivity
+        run: curl "${{ env.IP_SERVICE_URL }}"
+
+      # Step 4: Install OpenVPN Manager
       - name: Install OpenVPN Manager
         run: sudo bash -x openvpn-manager.sh --install
+
+      # Step 5: Stop OpenVPN service
+      - name: Stop OpenVPN Service
+        run: sudo bash -x openvpn-manager.sh --stop
+
+      # Step 6: Start OpenVPN service
+      - name: Start OpenVPN Service
+        run: sudo bash -x openvpn-manager.sh --start
+
+      # Step 7: Restart OpenVPN service
+      - name: Restart OpenVPN Service
+        run: sudo bash -x openvpn-manager.sh --restart
+
+      # Step 8: View OpenVPN service status
+      - name: View OpenVPN Status
+        run: sudo systemctl status openvpn@server
+
+      # Step 9: Add multiple OpenVPN clients (10 in this case)
+      - name: Add Multiple OpenVPN Clients
+        run: for i in {1..10}; do echo -e "\n" | sudo bash -x openvpn-manager.sh --add; done
+
+      # Step 10: Update dynamic DNS settings
+      - name: Update Dynamic DNS Settings
+        run: sudo IP_UPDATE_METHOD=1 bash -x openvpn-manager.sh --ddns
+
+      # Step 11: Create an OpenVPN backup
+      - name: Create OpenVPN Backup
+        run: sudo bash -x openvpn-manager.sh --backup
+
+      # Step 12: List all OpenVPN clients
+      - name: List OpenVPN Clients
+        run: sudo bash -x openvpn-manager.sh --list
+
+      # Step 13: Update OpenVPN Manager
+      - name: Update OpenVPN Manager
+        run: sudo bash -x openvpn-manager.sh --update
+
+      # Step 14: Allow full access to OpenVPN files (for testing or review purposes)
+      - name: Allow Access to Files
+        run: sudo chmod -R 777 /etc/openvpn/
+
+      # Step 15: Display OpenVPN and related configuration files
+      - name: Show Configuration Files
+        run: |
+          for file in \
+            /etc/openvpn/server.conf \
+            /etc/openvpn/easy-rsa/pki/private/* \
+            /etc/openvpn/easy-rsa/pki/issued/* \
+            /etc/openvpn/clients/*; do
+            if [ -f "$file" ]; then
+              echo "Showing $file"
+              cat "$file"
+            else
+              echo "File $file not found"
+            fi
+          done
+
+      # Step 16: Restrict access to OpenVPN files
+      - name: Restore File Permissions
+        run: sudo chmod -R 600 /etc/openvpn/
+
+      # Step 17: Display current crontab rules
+      - name: Display Crontab Rules
+        run: sudo crontab -l
+
+      # Step 18: Purge OpenVPN configuration
+      - name: Purge OpenVPN Configuration
+        run: sudo ./openvpn-manager.sh --purge
+
+      # Step 19: Uninstall OpenVPN Manager
+      - name: Uninstall OpenVPN Manager
+        run: sudo ./openvpn-manager.sh --uninstall
+
+      # Step 20: Display configuration files post-uninstallation
+      - name: Show Configuration Files (Post-Uninstallation)
+        run: |
+          for file in \
+            /etc/openvpn/server.conf \
+            /etc/openvpn/easy-rsa/pki/private/* \
+            /etc/openvpn/easy-rsa/pki/issued/* \
+            /etc/openvpn/clients/*; do
+            if [ -f "$file" ]; then
+              echo "Showing $file"
+              cat "$file"
+            else
+              echo "File $file not found"
+            fi
+          done
+
+      # Step 21: Display crontab rules post-uninstallation
+      - name: Display Crontab Rules Post-Uninstallation
+        run: sudo crontab -l
+
+      # Step 22: Final network test
+      - name: Final Network Test
+        run: curl "${{ env.IP_SERVICE_URL }}"
