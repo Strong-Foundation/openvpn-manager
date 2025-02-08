@@ -62,6 +62,20 @@ function system_information() {
 # Invoke the system_information function
 system_information
 
+# Function to install either resolvconf or openresolv, depending on the distribution.
+function install_resolvconf_or_openresolv() {
+  # Check if resolvconf is already installed on the system.
+  if [ ! -x "$(command -v resolvconf)" ]; then
+    # If resolvconf is not installed, install it for Ubuntu, Debian, Raspbian, Pop, Kali, Linux Mint, and Neon distributions.
+    if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+      apt-get install resolvconf -y
+    fi
+  fi
+}
+
+# Invoke the function to install either resolvconf or openresolv, depending on the distribution.
+install_resolvconf_or_openresolv
+
 # Define a function to check system requirements
 function installing_system_requirements() {
   # Check if the current Linux distribution is supported
@@ -598,20 +612,6 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Call the function to execute the OpenVPN port configuration process
   configure_openvpn_ports
-
-  # Function to install either resolvconf or openresolv, depending on the distribution.
-  function install_resolvconf_or_openresolv() {
-    # Check if resolvconf is already installed on the system.
-    if [ ! -x "$(command -v resolvconf)" ]; then
-      # If resolvconf is not installed, install it for Ubuntu, Debian, Raspbian, Pop, Kali, Linux Mint, and Neon distributions.
-      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
-        apt-get install resolvconf -y
-      fi
-    fi
-  }
-
-  # Invoke the function to install either resolvconf or openresolv, depending on the distribution.
-  install_resolvconf_or_openresolv
 
   # Function to prompt the user for their preferred DNS provider.
   function ask_install_dns() {
