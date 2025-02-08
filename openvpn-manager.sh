@@ -68,6 +68,7 @@ function install_resolvconf_or_openresolv() {
   if [ ! -x "$(command -v resolvconf)" ]; then
     # If resolvconf is not installed, install it for Ubuntu, Debian, Raspbian, Pop, Kali, Linux Mint, and Neon distributions.
     if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+      apt-get update
       apt-get install resolvconf -y
     fi
   fi
