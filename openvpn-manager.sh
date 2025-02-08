@@ -1091,8 +1091,6 @@ keepalive 10 60
 reneg-sec 3600
 # Send explicit exit notifications to clients upon server restart or shutdown
 explicit-exit-notify 2
-up \"/bin/sh -c echo 'Ready' >> lol.txt\"
-down \"/bin/sh -c echo 'Stop' >> lol.txt\"
 
 # - Security Enhancements -
 
