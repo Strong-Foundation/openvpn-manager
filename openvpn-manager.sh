@@ -1429,7 +1429,7 @@ else
 
     # Keep asking for a valid option until one is selected
     until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 17 ]; do
-      read -rp "Select an Option [1-16]: " -e -i 0 OPENVPN_OPTIONS
+      read -rp "Select an Option [1-17]: " -e -i 0 OPENVPN_OPTIONS
     done
 
     # Switch statement to handle the selected action
