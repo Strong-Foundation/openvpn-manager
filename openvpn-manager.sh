@@ -1046,7 +1046,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
-local 0.0.0.0
+local ${SERVER_PUB_NIC}
 # Use port ${SERVER_PORT} for incoming VPN connections
 port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
@@ -1407,15 +1407,29 @@ else
   # Function to manage network firewall configuration
   function network_firewall_configuration() {
     # Network Firewall Configuration
-    nft add table inet openvpn-${SERVER_PUB_NIC}
-    nft add chain inet openvpn-${SERVER_PUB_NIC} postrouting { type nat hook postrouting priority srcnat \; }
-    nft add rule inet openvpn-${SERVER_PUB_NIC} postrouting oifname ${SERVER_PUB_NIC} masquerade
-    sysctl --write net.ipv4.ip_forward=1
-    sysctl --write net.ipv6.conf.all.forwarding=1
-
-    # sysctl --write net.ipv4.ip_forward=0
-    # sysctl --write net.ipv6.conf.all.forwarding=0
-    # nft delete table inet openvpn-${SERVER_PUB_NIC}
+    # Check if the OpenVPN server service is active
+    OPENVPN_SERVER_SERVICE_STATUS=$(systemctl is-active openvpn-server@server.service)
+    # Get the public network interface name from the OpenVPN server configuration
+    OPENVPN_SERVER_PUB_NIC=$(grep -i "^local" "${OPENVPN_SERVER_CONFIG}" | awk '{print $2}')
+    if [ "${OPENVPN_SERVER_SERVICE_STATUS}" = "active" ]; then
+      # Enable IP forwarding for IPv4
+      sysctl --write net.ipv4.ip_forward=1
+      # Enable IP forwarding for IPv6
+      sysctl --write net.ipv6.conf.all.forwarding=1
+      # Create a new nftables table for the OpenVPN server
+      nft add table inet openvpn-"${OPENVPN_SERVER_PUB_NIC}"
+      # Add a new chain for the OpenVPN server
+      nft add chain inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting { type nat hook postrouting priority srcnat \; }
+      # Add a new rule to the chain to masquerade traffic
+      nft add rule inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting oifname "${OPENVPN_SERVER_PUB_NIC}" masquerade
+    elif [ "${OPENVPN_SERVER_SERVICE_STATUS}" = "failed" ]; then
+      # Disable IP forwarding for IPv4
+      sysctl --write net.ipv4.ip_forward=0
+      # Disable IP forwarding for IPv6
+      sysctl --write net.ipv6.conf.all.forwarding=0
+      # Flush the nftables table for the OpenVPN server
+      nft delete table inet openvpn-"${OPENVPN_SERVER_PUB_NIC}"
+    fi
   }
 
   # Function to manage OpenVPN service and configuration
