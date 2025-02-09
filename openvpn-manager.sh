@@ -1104,7 +1104,7 @@ script-security 2
 # Enable IP forwarding when OpenVPN starts
 up \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=1; sysctl --write net.ipv6.conf.all.forwarding=1'\"
 # Disable IP forwarding when OpenVPN stops
-down \"${BASH_BINARY_PATH}-c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0'\"
+down \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0'\"
 
 # - Logging & Debugging -
 
