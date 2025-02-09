@@ -192,7 +192,7 @@ OPENVPN_SERVER_CLIENT_DIRECTORY="${OPENVPN_DIRECTORY}/ccd"
 # Set the path to the openvpn IP persist file
 IFCONFIG_POOL_PERSIST_FILE="${OPENVPN_SERVER_DIRECTORY}/ipp.txt"
 # Set the path to the openvpn server config
-OPENVPN_SERVER_CONFIG="${OPENVPN_DIRECTORY}/server.conf"
+OPENVPN_SERVER_CONFIG="${OPENVPN_SERVER_DIRECTORY}/server.conf"
 # Set the path to the openvpn easy-rsa directory
 OPENVPN_SERVER_EASY_RSA_DIRECTORY="${OPENVPN_DIRECTORY}/easy-rsa"
 # Set the path to the openvpn pki directory
@@ -998,6 +998,9 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Generate the TLS Auth Key
     openvpn --genkey secret ${OPENVPN_SERVER_TLS_CRYPT_KEY}
 
+    # Check the path to the bash binary
+    BASH_BINARY_PATH=$(which bash)
+
     # Create the OpenVPN server configuration file with the specified settings.
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
@@ -1098,6 +1101,10 @@ user nobody
 group nogroup
 # Allow execution of external scripts with safe restrictions
 script-security 2
+# Enable IP forwarding when OpenVPN starts
+up \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=1; sysctl --write net.ipv6.conf.all.forwarding=1'\"
+# Disable IP forwarding when OpenVPN stops
+down \"${BASH_BINARY_PATH}-c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0'\"
 
 # - Logging & Debugging -
 
@@ -1116,20 +1123,17 @@ verb 0"
     if [ ! -d "${OPENVPN_SERVER_CLIENT_DIRECTORY}" ]; then
       mkdir --parents ${OPENVPN_SERVER_CLIENT_DIRECTORY}
     fi
-    # Enable IP forwarding in the kernel.
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=1
     # Manage the service based on the init system
     if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
       systemctl enable --now nftables
-      systemctl enable --now openvpn@server
+      systemctl enable --now openvpn-server@server.service
       if [ "${INSTALL_UNBOUND}" == true ]; then
         systemctl enable --now unbound
         systemctl restart unbound
       fi
     elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
       service nftables start
-      service openvpn@server start
+      service openvpn-server@server.service start
       if [ "${INSTALL_UNBOUND}" == true ]; then
         service unbound restart
       fi
@@ -1242,9 +1246,9 @@ else
   function display_openvpn_config() {
     # Display the OpenVPN configuration file
     if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
-      systemctl status openvpn@server
+      systemctl status openvpn-server@server.service
     elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
-      service openvpn@server status
+      service openvpn-server@server.service status
     fi
   }
 
@@ -1252,9 +1256,9 @@ else
   function start_openvpn_service() {
     # Start the OpenVPN service
     if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
-      systemctl start openvpn@server
+      systemctl start openvpn-server@server.service
     elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
-      service openvpn@server start
+      service openvpn-server@server.service start
     fi
   }
 
@@ -1262,9 +1266,9 @@ else
   function stop_openvpn_service() {
     # Stop the OpenVPN service
     if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
-      systemctl stop openvpn@server
+      systemctl stop openvpn-server@server.service
     elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
-      service openvpn@server stop
+      service openvpn-server@server.service stop
     fi
   }
 
@@ -1272,9 +1276,9 @@ else
   function restart_openvpn_service() {
     # Restart the OpenVPN service
     if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
-      systemctl restart openvpn@server
+      systemctl restart openvpn-server@server.service
     elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
-      service openvpn@server restart
+      service openvpn-server@server.service restart
     fi
   }
 
