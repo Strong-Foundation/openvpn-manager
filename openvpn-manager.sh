@@ -1039,7 +1039,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Make the (crt.pem) file readable by the OpenVPN server.
     chmod 644 ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST}
     # Copy the (crt.pem) file to the OpenVPN directory.
-    cp ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST} ${OPENVPN_SERVER_DIRECTORY}
+    ln ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST} ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST_LINK}
     # Generate the TLS Auth Key
     openvpn --genkey secret ${OPENVPN_SERVER_TLS_CRYPT_KEY}
 
@@ -1107,7 +1107,7 @@ key ${OPENVPN_SERVER_SSL_KEY}
 # Path to Diffie-Hellman parameters for key exchange
 dh ${OPENVPN_SERVER_DIFFIE_HELLMAN_PARAMETERS}
 # Verify client certificates against this CRL
-crl-verify ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST}
+crl-verify ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST_LINK}
 
 # - TLS & Cryptographic Settings -
 
