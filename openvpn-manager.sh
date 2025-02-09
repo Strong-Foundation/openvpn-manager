@@ -213,6 +213,8 @@ OPENVPN_SERVER_SSL_CERTIFICATE="${OPENVPN_PKI_DIRECTORY}/issued/server.crt"
 OPENVPN_SERVER_SSL_KEY="${OPENVPN_PKI_DIRECTORY}/private/server.key"
 # Set the path to the openvpn server ssl certificate revocation list
 OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST="${OPENVPN_PKI_DIRECTORY}/crl.pem"
+# Set the path to the openvpn server ssl certificate revocation list link
+OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST_LINK="${OPENVPN_SERVER_DIRECTORY}/crl.pem"
 # Generate a random number within the range 1-1 (always 1) and use it in a case statement
 case $(shuf --input-range=1-1 --head-count=1) in
 1)
@@ -1036,6 +1038,8 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} gen-crl
     # Make the (crt.pem) file readable by the OpenVPN server.
     chmod 644 ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST}
+    # Copy the (crt.pem) file to the OpenVPN directory.
+    cp ${OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST} ${OPENVPN_SERVER_DIRECTORY}
     # Generate the TLS Auth Key
     openvpn --genkey secret ${OPENVPN_SERVER_TLS_CRYPT_KEY}
 
@@ -1046,7 +1050,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
-local ${SERVER_PUB_NIC}
+local 0.0.0.0
 # Use port ${SERVER_PORT} for incoming VPN connections
 port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
@@ -1410,7 +1414,7 @@ else
     # Check if the OpenVPN server service is active
     OPENVPN_SERVER_SERVICE_STATUS=$(systemctl is-active openvpn-server@server.service)
     # Get the public network interface name from the OpenVPN server configuration
-    OPENVPN_SERVER_PUB_NIC=$(grep -i "^local" "${OPENVPN_SERVER_CONFIG}" | awk '{print $2}')
+    OPENVPN_SERVER_PUB_NIC="$(ip route | grep default | head --lines=1 | cut --delimiter=" " --fields=5)"
     if [ "${OPENVPN_SERVER_SERVICE_STATUS}" = "active" ]; then
       # Enable IP forwarding for IPv4
       sysctl --write net.ipv4.ip_forward=1
