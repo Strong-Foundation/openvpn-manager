@@ -215,6 +215,16 @@ OPENVPN_SERVER_SSL_KEY="${OPENVPN_PKI_DIRECTORY}/private/server.key"
 OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST="${OPENVPN_PKI_DIRECTORY}/crl.pem"
 # Set the path to the openvpn server ssl certificate revocation list link
 OPENVPN_SERVER_SSL_CERTIFICATE_REVOCATION_LIST_LINK="${OPENVPN_SERVER_DIRECTORY}/crl.pem"
+# Encryption cipher suite for the control channel
+CONTROL_CHANNEL_ENCRYPTION="TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384"
+# Encryption cipher for the data channel
+DATA_CHANNEL_ENCRYPTION="AES-256-GCM"
+# Encryption cipher for the data channel
+DATA_CHIPER="AES-256-GCM"
+# Elliptic curve used for the certificate key
+CERTIFICATE_ECDSA_CURVE="secp521r1"
+# HMAC digest algorithm for authentication
+HMAC_ALGORITHM="SHA512"
 # Generate a random number within the range 1-1 (always 1) and use it in a case statement
 case $(shuf --input-range=1-1 --head-count=1) in
 1)
@@ -922,17 +932,6 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Call the function to install Unbound.
   install_unbound
-
-  #
-  DATA_CHIPER="AES-256-GCM"
-  # Encryption cipher for the data channel
-  DATA_CHANNEL_ENCRYPTION="AES-256-GCM" # High-strength encryption for data transmission
-  # Elliptic curve used for the certificate key
-  CERTIFICATE_ECDSA_CURVE="secp521r1" # Strongest curve for ECDSA (Elliptic Curve Digital Signature Algorithm)
-  # Encryption cipher suite for the control channel
-  CONTROL_CHANNEL_ENCRYPTION="TLS-ECDHE-ECDSA-WITH-AES-256-GCM-SHA384" # Robust encryption suite for secure control channel communication
-  # HMAC digest algorithm for authentication
-  HMAC_ALGORITHM="SHA512" # High-security HMAC (Hash-based Message Authentication Code) algorithm
 
   if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
     systemctl enable --now haveged
