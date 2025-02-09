@@ -1399,6 +1399,12 @@ else
     echo "verify_openvpn_configuration"
   }
 
+  # Function to manage network firewall configuration
+  function network_firewall_configuration() {
+    # Network Firewall Configuration
+    echo "network_firewall_configuration"
+  }
+
   # Function to manage OpenVPN service and configuration
   function openvpn_management() {
     # Display a list of available actions for the OpenVPN management interface
@@ -1419,9 +1425,10 @@ else
     echo "   14) Remove all OpenVPN clients"
     echo "   15) Show OpenVPN client configuration"
     echo "   16) Verify OpenVPN configuration integrity"
+    echo "   17) Network Firewall Configuration"
 
     # Keep asking for a valid option until one is selected
-    until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 16 ]; do
+    until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 17 ]; do
       read -rp "Select an Option [1-16]: " -e -i 0 OPENVPN_OPTIONS
     done
 
@@ -1490,6 +1497,10 @@ else
     16)
       # Verify OpenVPN configurations for integrity and correctness
       verify_openvpn_configuration
+      ;;
+    17)
+      # Network Firewall Configuration
+      network_firewall_configuration
       ;;
     esac
   }
