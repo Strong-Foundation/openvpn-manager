@@ -784,11 +784,11 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
         if { [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
           apt-get install unbound unbound-host unbound-anchor -y
           # If the distribution is Ubuntu, disable systemd-resolved.
-            if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
-              systemctl disable --now systemd-resolved
-            elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
-              service systemd-resolved stop
-            fi
+          if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+            systemctl disable --now systemd-resolved
+          elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+            service systemd-resolved stop
+          fi
         fi
       fi
       # Configure Unbound to use the auto-trust-anchor-file.
