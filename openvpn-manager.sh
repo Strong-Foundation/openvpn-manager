@@ -1242,31 +1242,56 @@ else
   # Function to display openvpn configuration
   function display_openvpn_config() {
     # Display the OpenVPN configuration file
-    systemctl status openvpn@server
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl status openvpn@server
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service openvpn@server status
+    fi
   }
 
   # Function to start the OpenVPN service
   function start_openvpn_service() {
     # Start the OpenVPN service
-    systemctl start openvpn@server
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl start openvpn@server
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service openvpn@server start
+    fi
   }
 
   # Function to stop the OpenVPN service
   function stop_openvpn_service() {
     # Stop the OpenVPN service
-    systemctl stop openvpn@server
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl stop openvpn@server
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service openvpn@server stop
+    fi
   }
 
   # Function to restart the OpenVPN service
   function restart_openvpn_service() {
     # Restart the OpenVPN service
-    systemctl restart openvpn@server
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl restart openvpn@server
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service openvpn@server restart
+    fi
   }
 
   # Function to add a new OpenVPN client
   function add_openvpn_client() {
     # Generate the client certificate and key.
-    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-client-full "${CLIENT_NAME}" nopass
+    # If a client name isn't supplied, the script will request one
+    if [ -z "${NEW_CLIENT_NAME}" ]; then
+      echo "Let's name the OpenVPN Peer. Use one word only, no special characters, no spaces."
+      read -rp "New client peer:" -e -i "$(openssl rand -hex 5)" NEW_CLIENT_NAME
+    fi
+    # If no client name is provided, use openssl to generate a random name
+    if [ -z "${NEW_CLIENT_NAME}" ]; then
+      NEW_CLIENT_NAME="$(openssl rand -hex 5)"
+    fi
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-client-full "${NEW_CLIENT_NAME}" nopass
   }
 
   # Function to remove an OpenVPN client
