@@ -1230,39 +1230,37 @@ else
   # Function to display openvpn configuration
   function display_openvpn_config() {
     # Display the OpenVPN configuration file
-    echo "display_openvpn_config"
+    systemctl status openvpn@server
   }
 
   # Function to start the OpenVPN service
   function start_openvpn_service() {
     # Start the OpenVPN service
-    echo "start_openvpn_service"
+    systemctl start openvpn@server
   }
 
   # Function to stop the OpenVPN service
   function stop_openvpn_service() {
     # Stop the OpenVPN service
-    echo "stop_openvpn_service"
+    systemctl stop openvpn@server
   }
 
   # Function to restart the OpenVPN service
   function restart_openvpn_service() {
     # Restart the OpenVPN service
-    echo "restart_openvpn_service"
+    systemctl restart openvpn@server
   }
 
   # Function to add a new OpenVPN client
   function add_openvpn_client() {
     # Generate the client certificate and key.
-    easyrsa build-client-full client1 nopass
-    echo "add_openvpn_client"
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-client-full "${CLIENT_NAME}" nopass
   }
 
   # Function to remove an OpenVPN client
   function remove_openvpn_client() {
     # Remove an OpenVPN client
-    ./easyrsa revoke client1
-    echo "remove_openvpn_client"
+    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} revoke "${CLIENT_NAME}"
   }
 
   # Function to reinstall the OpenVPN service
