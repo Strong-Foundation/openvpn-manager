@@ -292,6 +292,7 @@ function usage_guide() {
   echo "  --backup      Creates a backup of your current OpenVPN configuration"
   echo "  --restore     Restores the OpenVPN configuration from a previous backup"
   echo "  --purge       Removes all client configurations from the OpenVPN server"
+  echo "  --firewall    Configures the firewall to allow OpenVPN traffic"
   echo "  --help        Displays this usage guide"
 }
 
@@ -351,6 +352,10 @@ function usage() {
     --purge) # If it's "--purge", set the variable OPENVPN_OPTIONS to 14
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=14}
+      ;;
+    --firewall) # If it's "--firewall", set the variable OPENVPN_OPTIONS to 15
+      shift
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=17}
       ;;
     --help) # If it's "--help", call the function usage_guide
       shift
@@ -1138,9 +1143,9 @@ group nogroup
 # Allow execution of external scripts with safe restrictions
 script-security 2
 # Enable IP forwarding when OpenVPN starts
-up \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=1; sysctl --write net.ipv6.conf.all.forwarding=1'\"
+up \"${BASH_BINARY_PATH} -c 'bash ${CURRENT_FILE_PATH} --firewall'\"
 # Disable IP forwarding when OpenVPN stops
-down \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0'\"
+down \"${BASH_BINARY_PATH} -c 'bash ${CURRENT_FILE_PATH} --firewall'\"
 
 # - Logging & Debugging -
 
@@ -1402,7 +1407,15 @@ else
   # Function to manage network firewall configuration
   function network_firewall_configuration() {
     # Network Firewall Configuration
-    echo "network_firewall_configuration"
+    nft add table inet openvpn-${SERVER_PUB_NIC}
+    nft add chain inet openvpn-${SERVER_PUB_NIC} postrouting { type nat hook postrouting priority srcnat \; }
+    nft add rule inet openvpn-${SERVER_PUB_NIC} postrouting oifname ${SERVER_PUB_NIC} masquerade
+    sysctl --write net.ipv4.ip_forward=1
+    sysctl --write net.ipv6.conf.all.forwarding=1
+
+    # sysctl --write net.ipv4.ip_forward=0
+    # sysctl --write net.ipv6.conf.all.forwarding=0
+    # nft delete table inet openvpn-${SERVER_PUB_NIC}
   }
 
   # Function to manage OpenVPN service and configuration
