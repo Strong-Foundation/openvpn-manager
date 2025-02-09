@@ -1121,9 +1121,21 @@ verb 0"
     # Enable IP forwarding in the kernel.
     sysctl -w net.ipv4.ip_forward=1
     sysctl -w net.ipv6.conf.all.forwarding=1
-    # Restart the OpenVPN service to apply the changes.
-    systemctl enable openvpn@server
-    systemctl restart openvpn@server
+    # Manage the service based on the init system
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl enable --now nftables
+      systemctl enable --now openvpn@server
+      if [ "${INSTALL_UNBOUND}" == true ]; then
+        systemctl enable --now unbound
+        systemctl restart unbound
+      fi
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service nftables start
+      service openvpn@server start
+      if [ "${INSTALL_UNBOUND}" == true ]; then
+        service unbound restart
+      fi
+    fi
 
     # Generate the client certificate and key.
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-client-full "${CLIENT_NAME}" nopass
