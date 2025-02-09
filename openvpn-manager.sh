@@ -1138,9 +1138,9 @@ group nogroup
 # Allow execution of external scripts with safe restrictions
 script-security 2
 # Enable IP forwarding when OpenVPN starts
-up \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=1; sysctl --write net.ipv6.conf.all.forwarding=1; nft add table inet openvpn-${SERVER_PUB_NIC}; nft add chain inet openvpn-${SERVER_PUB_NIC} postrouting { type nat hook postrouting priority srcnat \; }; nft add rule inet openvpn-${SERVER_PUB_NIC} postrouting oifname ${SERVER_PUB_NIC} masquerade'\"
+up \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=1; sysctl --write net.ipv6.conf.all.forwarding=1'\"
 # Disable IP forwarding when OpenVPN stops
-down \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0; nft delete table inet openvpn-${SERVER_PUB_NIC}'\"
+down \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0'\"
 
 # - Logging & Debugging -
 
