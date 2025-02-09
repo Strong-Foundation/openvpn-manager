@@ -378,6 +378,7 @@ function headless_install() {
     SERVER_HOST_V4_SETTINGS=${SERVER_HOST_V4_SETTINGS=1}       # Default to 1 (IPv4)
     SERVER_HOST_V6_SETTINGS=${SERVER_HOST_V6_SETTINGS=1}       # Default to 1 (IPv6)
     SERVER_HOST_SETTINGS=${SERVER_HOST_SETTINGS=1}             # Default to 1 (IPv4)
+    SERVER_PUB_NIC_SETTINGS=${SERVER_PUB_NIC_SETTINGS=1}       # Default to 1 (IP Route)
     PROTOCOL_CHOICE=${PROTOCOL_CHOICE=1}                       # Default to 1 (UDP as primary, TCP as secondary)
     SERVER_PORT_SETTINGS=${SERVER_PORT_SETTINGS=1}             # Default to 1 (1194)
     DNS_PROVIDER_SETTINGS=${DNS_PROVIDER_SETTINGS=1}           # Default to 1 (Unbound)
@@ -531,6 +532,41 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
 
   # Invoke the function to select the IP version for OpenVPN
   ipvx_select_openvpn
+
+  # Define a function to identify the public Network Interface Card (NIC).
+  function server_pub_nic() {
+    # Prompt the user to select the method for identifying the NIC.
+    echo "How would you like to identify the Network Interface Card (NIC)?"
+    echo "  1) IP Route (Recommended)"
+    echo "  2) Custom Input (Advanced)"
+    # Loop until the user provides a valid input (either 1 or 2).
+    until [[ "${SERVER_PUB_NIC_SETTINGS}" =~ ^[1-2]$ ]]; do
+      read -rp "NIC Choice [1-2]:" -e -i 1 SERVER_PUB_NIC_SETTINGS
+    done
+    # Execute a case statement based on the user's choice.
+    case ${SERVER_PUB_NIC_SETTINGS} in
+    1)
+      # Use the IP route command to automatically identify the NIC.
+      SERVER_PUB_NIC="$(ip route | grep default | head --lines=1 | cut --delimiter=" " --fields=5)"
+      # If no NIC is found, exit the script with an error message.
+      if [ -z "${SERVER_PUB_NIC}" ]; then
+        echo "Error: Unable to identify your server's public network interface."
+        exit
+      fi
+      ;;
+    2)
+      # Prompt the user to manually input the NIC.
+      read -rp "Custom NIC:" SERVER_PUB_NIC
+      # If the user doesn't provide an input, use the IP route command to identify the NIC.
+      if [ -z "${SERVER_PUB_NIC}" ]; then
+        SERVER_PUB_NIC="$(ip route | grep default | head --lines=1 | cut --delimiter=" " --fields=5)"
+      fi
+      ;;
+    esac
+  }
+
+  # Call the function to identify the public NIC.
+  server_pub_nic
 
   # Define a function to configure the protocol settings for OpenVPN
   function configure_protocol() {
@@ -1102,9 +1138,9 @@ group nogroup
 # Allow execution of external scripts with safe restrictions
 script-security 2
 # Enable IP forwarding when OpenVPN starts
-up \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=1; sysctl --write net.ipv6.conf.all.forwarding=1'\"
+up \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=1; sysctl --write net.ipv6.conf.all.forwarding=1; nft add table inet openvpn-${SERVER_PUB_NIC}; nft add chain inet openvpn-${SERVER_PUB_NIC} postrouting { type nat hook postrouting priority srcnat \; }; nft add rule inet openvpn-${SERVER_PUB_NIC} postrouting oifname ${SERVER_PUB_NIC} masquerade'\"
 # Disable IP forwarding when OpenVPN stops
-down \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0'\"
+down \"${BASH_BINARY_PATH} -c 'sysctl --write net.ipv4.ip_forward=0; sysctl --write net.ipv6.conf.all.forwarding=0; nft delete table inet openvpn-${SERVER_PUB_NIC}'\"
 
 # - Logging & Debugging -
 
