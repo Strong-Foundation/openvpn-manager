@@ -1024,7 +1024,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     # Loop through each file found
     for INVALID_VARS_FILE in ${ALL_VARS_FILES}; do
       # Check if the file is NOT the valid OpenVPN variables file
-      if [[ "${INVALID_VARS_FILE}" != "${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}" ]]; then
+      if [ "${INVALID_VARS_FILE}" != "${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}" ]; then
         rm -f "${INVALID_VARS_FILE}" # Remove the invalid file
       fi
     done
