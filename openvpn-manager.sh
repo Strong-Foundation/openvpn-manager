@@ -1338,7 +1338,99 @@ else
     if [ -z "${NEW_CLIENT_NAME}" ]; then
       NEW_CLIENT_NAME="$(openssl rand -hex 5)"
     fi
+    # Generate the client certificate and key.
     ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} build-client-full "${NEW_CLIENT_NAME}" nopass
+    # Read the content of the certificate authority (CA) file into a variable
+    OPENVPN_SERVER_CERTIFICATE_AUTHORITY_CONTENT=$(cat ${OPENVPN_SERVER_CERTIFICATE_AUTHORITY})
+    # Extract and store the content of the client certificate (specified by CLIENT_NAME) from the .crt file
+    OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT=$(awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' /etc/openvpn/easy-rsa/pki/issued/"${NEW_CLIENT_NAME}".crt)
+    # Read the content of the private key for the client (specified by CLIENT_NAME) into a variable
+    OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/"${NEW_CLIENT_NAME}".key)
+    # Read the content of the TLS crypt key into a variable
+    OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT=$(cat ${OPENVPN_SERVER_TLS_CRYPT_KEY})
+    # Create the OpenVPN client configuration file with the specified settings.
+    OPEN_VPN_CLIENT_CONFIG="# - Client Basic Settings -
+#
+client
+# Specify the OpenVPN protocol and use UDP for better performance
+proto ${PRIMARY_PROTOCOL}
+# Define the remote server IP or hostname and the port number
+remote ${SERVER_HOST} ${SERVER_PORT}
+# Use a tunnel device (tun) instead of an ethernet bridge (tap)
+dev tun
+
+# - Cryptographic & Security Settings -
+
+# Enable TLS client mode to establish a secure connection
+tls-client
+# Verify that the server certificate is signed by a valid CA
+remote-cert-tls server
+# Enforce TLS 1.3 for stronger security
+tls-version-min 1.3
+# Specify the TLS cipher suite for the control channel
+tls-cipher ${CONTROL_CHANNEL_ENCRYPTION}
+# Use ${DATA_CHANNEL_ENCRYPTION} for data encryption (fast and secure)
+cipher ${DATA_CHANNEL_ENCRYPTION}
+# Use ${HMAC_ALGORITHM} for HMAC message authentication to ensure data integrity
+auth ${HMAC_ALGORITHM}
+
+# - Connection Settings -
+
+# Do not bind to a specific local port (let the OS choose)
+nobind
+# Send a ping every 10 seconds; disconnect if no response within 60 seconds
+keepalive 10 60
+
+# - Routing & DNS -
+
+# Redirect all IPv4 traffic through the VPN tunnel
+redirect-gateway def1
+# Redirect all IPv6 traffic through the VPN tunnel
+redirect-gateway ipv6
+# Ensure DNS queries go through the VPN (prevents leaks)
+setenv opt block-outside-dns
+# Route all domain-based queries through the VPN
+dhcp-option DOMAIN-ROUTE .
+# Use Cloudflare DNS for better privacy and security
+dhcp-option DNS 1.1.1.1  # Primary IPv4 DNS
+dhcp-option DNS 1.0.0.1  # Secondary IPv4 DNS
+dhcp-option DNS 2606:4700:4700::1111  # Primary IPv6 DNS
+dhcp-option DNS 2606:4700:4700::1001  # Secondary IPv6 DNS
+# If the VPN server does not support IPv6, ignore IPv6-related settings
+pull-filter ignore \"route-ipv6\"
+pull-filter ignore \"ifconfig-ipv6\"
+
+# - Low-Power Mode for Mobile Devices -
+
+# Automatically disconnect if inactive for 15 minutes (900 seconds)
+inactive 900
+
+# - Compression & Logging -
+
+# Set logging verbosity (increase for debugging, lower for less output)
+verb 0
+
+# - Embedded Certificates & Keys -
+
+# The CA certificate verifies the servers certificate and ensures its signed by a trusted authority
+<ca>
+${OPENVPN_SERVER_CERTIFICATE_AUTHORITY_CONTENT}
+</ca>
+# The client certificate authenticates the client to the server during the TLS handshake
+<cert>
+${OPENVPN_SERVER_CLIENT_CERTIFICATE_CONTENT}
+</cert>
+# The client private key proves ownership of the client certificate during the TLS handshake
+<key>
+${OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT}
+</key>
+# The TLS-crypt key secures the control channel and protects against attacks like DoS and traffic analysis
+<tls-crypt>
+${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
+</tls-crypt>"
+    # Put the client config into the client config file.
+    echo -e "${OPEN_VPN_CLIENT_CONFIG}" >"${OPENVPN_SERVER_CLIENT_DIRECTORY}/${NEW_CLIENT_NAME}.ovpn"
+    echo "The OpenVPN client config is saved at ${OPENVPN_SERVER_CLIENT_DIRECTORY}/${NEW_CLIENT_NAME}.ovpn"
   }
 
   # Function to remove an OpenVPN client
