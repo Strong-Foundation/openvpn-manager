@@ -106,7 +106,7 @@ jobs:
 
       # Step 17: Display current crontab rules
       - name: Display Crontab Rules
-        run: sudo crontab -l
+        run : echo "change later three" # sudo crontab -l
 
       # Step 18: Purge OpenVPN configuration
       - name: Purge OpenVPN Configuration
@@ -134,7 +134,7 @@ jobs:
 
       # Step 21: Display crontab rules post-uninstallation
       - name: Display Crontab Rules Post-Uninstallation
-        run: sudo crontab -l
+        run : echo "change later four" # sudo crontab -l
 
       # Step 22: Final network test
       - name: Final Network Test
