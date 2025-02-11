@@ -110,11 +110,11 @@ jobs:
 
       # Step 18: Purge OpenVPN configuration
       - name: Purge OpenVPN Configuration
-        run: sudo ./openvpn-manager.sh --purge
+        run: sudo bash -x openvpn-manager.sh --purge
 
       # Step 19: Uninstall OpenVPN Manager
       - name: Uninstall OpenVPN Manager
-        run: sudo ./openvpn-manager.sh --uninstall
+        run: sudo bash -x openvpn-manager.sh --uninstall
 
       # Step 20: Display configuration files post-uninstallation
       - name: Show Configuration Files (Post-Uninstallation)
