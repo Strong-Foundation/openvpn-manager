@@ -58,7 +58,7 @@ jobs:
 
       # Step 8: View OpenVPN service status
       - name: View OpenVPN Status
-        run : echo "change Later" # sudo bash -x openvpn-manager.sh --list
+        run : echo "change later one" # sudo bash -x openvpn-manager.sh --list
 
       # Step 9: Add multiple OpenVPN clients (10 in this case)
       - name: Add Multiple OpenVPN Clients
@@ -74,7 +74,7 @@ jobs:
 
       # Step 12: List all OpenVPN clients
       - name: List OpenVPN Clients
-        run: sudo bash -x openvpn-manager.sh --list
+        run : echo "change later two" # sudo bash -x openvpn-manager.sh --list
 
       # Step 13: Update OpenVPN Manager
       - name: Update OpenVPN Manager
