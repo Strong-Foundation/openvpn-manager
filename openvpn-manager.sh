@@ -1496,7 +1496,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
   # Function to verify OpenVPN configuration
   function verify_openvpn_configuration() {
     # Verify OpenVPN configuration
-    echo "verify_openvpn_configuration"
+    openvpn --config ${OPENVPN_SERVER_CONFIG} --test
   }
 
   # Function to manage network firewall configuration
