@@ -1460,7 +1460,54 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
   # Function to update the OpenVPN management script
   function update_openvpn_script() {
     # Update the OpenVPN management script
-    echo "update_openvpn_script"
+    # Update OpenVPN Manager script.
+    # Calculate the SHA3-512 hash of the current OpenVPN Manager script
+    CURRENT_OPENVPN_MANAGER_HASH=$(openssl dgst -sha3-512 "${CURRENT_FILE_PATH}" | cut --delimiter=" " --fields=2)
+    # Calculate the SHA3-512 hash of the latest OpenVPN Manager script from the remote source
+    NEW_OPENVPN_MANAGER_HASH=$(curl --silent "${OPENVPN_MANAGER_UPDATE}" | openssl dgst -sha3-512 | cut --delimiter=" " --fields=2)
+    # If the hashes don't match, update the local OpenVPN Manager script
+    if [ "${CURRENT_OPENVPN_MANAGER_HASH}" != "${NEW_OPENVPN_MANAGER_HASH}" ]; then
+      curl "${OPENVPN_MANAGER_UPDATE}" -o "${CURRENT_FILE_PATH}"
+      chmod +x "${CURRENT_FILE_PATH}"
+      echo "Updating OpenVPN Manager script..."
+    fi
+
+    # Update the Unbound DNS server configuration if Unbound is installed
+    if [ -x "$(command -v unbound)" ]; then
+      # Update the Unbound root hints file if it exists
+      if [ -f "${UNBOUND_ROOT_HINTS}" ]; then
+        CURRENT_ROOT_HINTS_HASH=$(openssl dgst -sha3-512 "${UNBOUND_ROOT_HINTS}" | cut --delimiter=" " --fields=2)
+        NEW_ROOT_HINTS_HASH=$(curl --silent "${UNBOUND_ROOT_SERVER_CONFIG_URL}" | openssl dgst -sha3-512 | cut --delimiter=" " --fields=2)
+        if [ "${CURRENT_ROOT_HINTS_HASH}" != "${NEW_ROOT_HINTS_HASH}" ]; then
+          curl "${UNBOUND_ROOT_SERVER_CONFIG_URL}" -o "${UNBOUND_ROOT_HINTS}"
+          echo "Updating Unbound root hints file..."
+          LOCAL_RESTART_UNBOUND=true
+        fi
+      fi
+
+      # Update the Unbound configuration hosts file if it exists
+      if [ -f "${UNBOUND_CONFIG_HOST}" ]; then
+        CURRENT_UNBOUND_HOSTS_HASH=$(openssl dgst -sha3-512 "${UNBOUND_CONFIG_HOST}" | cut --delimiter=" " --fields=2)
+        NEW_UNBOUND_HOSTS_HASH=$(curl --silent "${UNBOUND_CONFIG_HOST_URL}" | awk '{print "local-zone: \""$1"\" always_refuse"}' | openssl dgst -sha3-512 | cut --delimiter=" " --fields=2)
+        if [ "${CURRENT_UNBOUND_HOSTS_HASH}" != "${NEW_UNBOUND_HOSTS_HASH}" ]; then
+          curl "${UNBOUND_CONFIG_HOST_URL}" | awk '{print "local-zone: \""$1"\" always_refuse"}' >"${UNBOUND_CONFIG_HOST}"
+          echo "Updating Unbound configuration host file..."
+          LOCAL_RESTART_UNBOUND=true
+        fi
+      fi
+
+      # Restart Unbound service if necessary
+      if [ "${LOCAL_RESTART_UNBOUND}" == "true" ]; then
+        if [[ "${CURRENT_INIT_SYSTEM}" == *"systemd"* ]]; then
+          systemctl restart unbound
+          echo "Restarting Unbound service..."
+        elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+          service unbound restart
+          echo "Restarting Unbound service..."
+        fi
+      fi
+    fi
+
   }
 
   # Function to backup the OpenVPN configuration
