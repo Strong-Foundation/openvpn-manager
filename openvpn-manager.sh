@@ -1534,7 +1534,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Take in input for the new port
     read -rp "Please enter a new port for OpenVPN: " NEW_OPENVPN_PORT
     # Replace the server port
-    sed -i "s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_SERVER_CONFIG}
+    sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_SERVER_CONFIG}
     # Find all the configs from the config direcotry.
     
     # Replace the port for the client configs.
