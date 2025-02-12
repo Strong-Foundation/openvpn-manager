@@ -1526,6 +1526,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
   function update_openvpn_interface_ip() {
     # Update the OpenVPN interface IP
     echo "update_openvpn_interface_ip"
+    sed -i "/^remote /s/[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/1.0.0.1/" ${OPENVPN_SERVER_CONFIG}
   }
 
   # Function to update the OpenVPN interface port
