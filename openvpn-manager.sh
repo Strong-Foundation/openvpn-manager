@@ -1376,7 +1376,7 @@ else
     # Read the content of the TLS crypt key into a variable
     OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT=$(cat ${OPENVPN_SERVER_TLS_CRYPT_KEY})
     # Extract the current port used the server.
-    OPENVPN_SERVER_PORT_EXTRACT=$("^port [0-9]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
+    OPENVPN_SERVER_PORT_EXTRACT=$(grep -E "^port [0-9]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
     # Extract the current protocol used by the server.
     OPENVPN_SERVER_PROTOCOL_EXTRACT=$(grep -E "^proto [a-z0-9]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
     # Extract the current IP used by the server.
