@@ -1454,7 +1454,14 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
   # Function to uninstall the OpenVPN service
   function uninstall_openvpn() {
     # Uninstall the OpenVPN service
-    echo "uninstall_openvpn"
+    # Check if required packages are already installed
+    if { [ -x "$(command -v openvpn)" ] || [ -x "$(command -v openssl)" ] || [ -x "$(command -v gpg)" ] || [ -x "$(command -v make-cadir)" ] || [ -x "$(command -v nft)" ]; }; then
+      # Install required packages depending on the Linux distribution
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+        apt-get update
+        apt-get remove --purge openvpn openssl gnupg ca-certificates easy-rsa nftables -y
+      fi
+    fi
   }
 
   # Function to update the OpenVPN management script
