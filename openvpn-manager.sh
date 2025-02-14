@@ -1578,7 +1578,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       nft add chain inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting { type nat hook postrouting priority srcnat \; }
       # Add a new rule to the chain to masquerade traffic
       nft add rule inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting oifname "${OPENVPN_SERVER_PUB_NIC}" masquerade
-    elif [ "${OPENVPN_SERVER_SERVICE_STATUS}" = "failed" ]; then
+    else
       # Disable IP forwarding for IPv4
       sysctl --write net.ipv4.ip_forward=0
       # Disable IP forwarding for IPv6
