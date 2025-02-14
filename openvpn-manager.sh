@@ -591,31 +591,19 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   function configure_protocol() {
     # Prompt the user to configure the primary and secondary protocols
     echo "Select the primary and secondary protocols for OpenVPN:"
-    echo "  1) UDP as primary, TCP as secondary (Recommended)"
-    echo "  2) TCP as primary, UDP as secondary"
-    echo "  3) UDP only (No secondary)"
-    echo "  4) TCP only (No secondary)"
+    echo "  1) UDP (Recommended)"
+    echo "  2) TCP"
     # Loop until the user provides a valid input
-    until [[ "${PROTOCOL_CHOICE}" =~ ^[1-4]$ ]]; do
-      read -rp "Protocol Choice [1-4]: " -e -i 1 PROTOCOL_CHOICE
+    until [[ "${PROTOCOL_CHOICE}" =~ ^[1-2]$ ]]; do
+      read -rp "Protocol Choice [1-2]: " -e -i 1 PROTOCOL_CHOICE
     done
     # Set the protocols based on the user's choice
     case ${PROTOCOL_CHOICE} in
     1)
       PRIMARY_PROTOCOL="udp4"
-      SECONDARY_PROTOCOL="tcp4"
       ;;
     2)
       PRIMARY_PROTOCOL="tcp4"
-      SECONDARY_PROTOCOL="udp4"
-      ;;
-    3)
-      PRIMARY_PROTOCOL="udp4"
-      SECONDARY_PROTOCOL="none"
-      ;;
-    4)
-      PRIMARY_PROTOCOL="tcp4"
-      SECONDARY_PROTOCOL="none"
       ;;
     esac
   }
@@ -743,48 +731,85 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
       case ${CLIENT_DNS_SETTINGS} in
       1)
         # Set DNS addresses for Cloudflare.
-        CLIENT_DNS="1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="1.1.1.1"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="1.0.0.1"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2606:4700:4700::1111"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2606:4700:4700::1001"
         ;;
       2)
         # Set DNS addresses for AdGuard.
-        CLIENT_DNS="94.140.14.14,94.140.15.15,2a10:50c0::ad1:ff,2a10:50c0::ad2:ff"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="94.140.14.14"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="94.140.15.15"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2a10:50c0::ad1:ff"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2a10:50c0::ad2:ff"
         ;;
       3)
         # Set DNS addresses for NextDNS.
-        CLIENT_DNS="45.90.28.167,45.90.30.167,2a07:a8c0::12:cf53,2a07:a8c1::12:cf53"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="45.90.28.167"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="45.90.30.167"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2a07:a8c0::12:cf53"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2a07:a8c1::12:cf53"
         ;;
       4)
         # Set DNS addresses for OpenDNS.
-        CLIENT_DNS="208.67.222.222,208.67.220.220,2620:119:35::35,2620:119:53::53"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="208.67.222.222"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="208.67.220.220"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2620:119:35::35"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2620:119:53::53"
         ;;
       5)
         # Set DNS addresses for Google.
-        CLIENT_DNS="8.8.8.8,8.8.4.4,2001:4860:4860::8888,2001:4860:4860::8844"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="8.8.8.8"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="8.8.4.4"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2001:4860:4860::8888"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2001:4860:4860::8844"
         ;;
       6)
         # Set DNS addresses for Verisign.
-        CLIENT_DNS="64.6.64.6,64.6.65.6,2620:74:1b::1:1,2620:74:1c::2:2"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="64.6.64.6"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="64.6.65.6"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2620:74:1b::1:1"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2620:74:1c::2:2"
         ;;
       7)
         # Set DNS addresses for Quad9.
-        CLIENT_DNS="9.9.9.9,149.112.112.112,2620:fe::fe,2620:fe::9"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="9.9.9.9"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="149.112.112.112"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2620:fe::fe"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2620:fe::9"
         ;;
       8)
         # Set DNS addresses for FDN.
-        CLIENT_DNS="80.67.169.40,80.67.169.12,2001:910:800::40,2001:910:800::12"
+        CLIENT_DNS_PRIMARY_IPV4_DNS="80.67.169.40"
+        CLIENT_DNS_SECONDARY_IPV4_DNS="80.67.169.12"
+        CLIENT_DNS_PRIMARY_IPV6_DNS="2001:910:800::40"
+        CLIENT_DNS_SECONDARY_IPV6_DNS="2001:910:800::12"
         ;;
       9)
         # Prompt the user to enter a custom DNS address.
-        read -rp "Custom DNS:" CLIENT_DNS
+        read -rp "Custom primary IPv4 DNS: " CLIENT_DNS_PRIMARY_IPV4_DNS
+        read -rp "Custom secondary IPv4 DNS: " CLIENT_DNS_SECONDARY_IPV4_DNS
+        read -rp "Custom primary IPv6 DNS: " CLIENT_DNS_PRIMARY_IPV6_DNS
+        read -rp "Custom secondary IPv6 DNS: " CLIENT_DNS_SECONDARY_IPV6_DNS
         # If the user doesn't provide a custom DNS, default to Google's DNS.
-        if [ -z "${CLIENT_DNS}" ]; then
-          CLIENT_DNS="8.8.8.8,8.8.4.4,2001:4860:4860::8888,2001:4860:4860::8844"
+        if [ -z "${CLIENT_DNS_PRIMARY_IPV4_DNS}" ]; then
+          CLIENT_DNS_PRIMARY_IPV4_DNS="8.8.8.8"
+        fi
+        if [ -z "${CLIENT_DNS_SECONDARY_IPV4_DNS}" ]; then
+          CLIENT_DNS_SECONDARY_IPV4_DNS="8.8.4.4"
+        fi
+        if [ -z "${CLIENT_DNS_PRIMARY_IPV6_DNS}" ]; then
+          CLIENT_DNS_PRIMARY_IPV6_DNS="2001:4860:4860::8888"
+        fi
+        if [ -z "${CLIENT_DNS_SECONDARY_IPV6_DNS}" ]; then
+          CLIENT_DNS_SECONDARY_IPV6_DNS="2001:4860:4860::8844"
         fi
         ;;
       10)
         # If Pi-Hole is installed, use its DNS. Otherwise, install Unbound and enable the block list.
         if [ -x "$(command -v pihole)" ]; then
-          CLIENT_DNS="${GATEWAY_ADDRESS_V4},${GATEWAY_ADDRESS_V6}"
+          CLIENT_DNS_PRIMARY_IPV4_DNS="${GATEWAY_ADDRESS_V4}"
+          CLIENT_DNS_PRIMARY_IPV6_DNS="${GATEWAY_ADDRESS_V6}"
         else
           INSTALL_UNBOUND=true
           INSTALL_BLOCK_LIST=true
@@ -1047,7 +1072,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
-local 0.0.0.0
+local ${SERVER_HOST}
 # Use port ${SERVER_PORT} for incoming VPN connections
 port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
@@ -1057,10 +1082,10 @@ dev tun
 
 # - VPN IP Addressing & Routing -
 
-# Define the IPv4 pool for clients (10.0.0.0/24)
-server 10.0.0.0 255.255.255.0
+# Define the IPv4 pool for clients (${PRIVATE_SUBNET_V4})
+server ${PRIVATE_SUBNET_V4} 255.255.255.0
 # Define the IPv6 pool for clients (a standard /64 subnet)
-server-ipv6 fd00:0:0:1::/64
+server-ipv6 ${PRIVATE_SUBNET_V6}
 # Use subnet topology for individual client IP assignment
 topology subnet
 # Push IPv6 support to connecting clients
@@ -1152,7 +1177,6 @@ down \"${BASH_BINARY_PATH} -c 'bash ${CURRENT_FILE_PATH} --firewall'\"
 
 # Disable logging (no logs will be written)
 verb 0"
-    # Check if the secondary protocol is used, if its used add SECONDARY_PROTOCOL
 
     # Put the server config into the server config file.
     echo -e "${OPEN_VPN_SERVER_CONFIG}" | awk '!seen[$0]++' >${OPENVPN_SERVER_CONFIG}
@@ -1351,14 +1375,20 @@ else
     OPENVPN_SERVER_CLIENT_CERTIFICATE_KEY_CONTENT=$(cat /etc/openvpn/easy-rsa/pki/private/"${NEW_CLIENT_NAME}".key)
     # Read the content of the TLS crypt key into a variable
     OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT=$(cat ${OPENVPN_SERVER_TLS_CRYPT_KEY})
+    # Extract the current port used the server.
+    OPENVPN_SERVER_PORT_EXTRACT=$("^port [0-9]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
+    # Extract the current protocol used by the server.
+    OPENVPN_SERVER_PROTOCOL_EXTRACT=$(grep -E "^proto [a-z0-9]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
+    # Extract the current IP used by the server.
+    OPENVPN_SERVER_IP_EXTRACT=$(grep -E "^local [0-9.]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
     # Create the OpenVPN client configuration file with the specified settings.
     OPEN_VPN_CLIENT_CONFIG="# - Client Basic Settings -
 #
 client
 # Specify the OpenVPN protocol and use UDP for better performance
-proto ${PRIMARY_PROTOCOL}
+proto ${OPENVPN_SERVER_PROTOCOL_EXTRACT}
 # Define the remote server IP or hostname and the port number
-remote ${SERVER_HOST} ${SERVER_PORT}
+remote ${OPENVPN_SERVER_IP_EXTRACT} ${OPENVPN_SERVER_PORT_EXTRACT}
 # Use a tunnel device (tun) instead of an ethernet bridge (tap)
 dev tun
 
