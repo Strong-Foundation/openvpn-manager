@@ -822,12 +822,12 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Invoke the custom_dns function to allow the user to select a DNS provider.
   custom_dns
 
-  # Function to prompt for the name of the first WireGuard peer.
+  # Function to prompt for the name of the first OpenVPN client.
   function client_name() {
     # If CLIENT_NAME variable is not set, prompt the user for input.
     if [ -z "${CLIENT_NAME}" ]; then
       # Display naming rules to the user.
-      echo "Please provide a name for the WireGuard Peer. The name should be a single word, without special characters or spaces."
+      echo "Please provide a name for the OpenVPN client. The name should be a single word, without special characters or spaces."
       # Read the user's input, offering a random string as the default name.
       read -rp "Client name:" -e -i "$(openssl rand -hex 5)" CLIENT_NAME
     fi
@@ -1085,7 +1085,7 @@ dev tun
 # Define the IPv4 pool for clients (${PRIVATE_SUBNET_V4})
 server ${PRIVATE_SUBNET_V4} 255.255.255.0
 # Define the IPv6 pool for clients (a standard /64 subnet)
-server-ipv6 ${$GATEWAY_ADDRESS_V6}/64
+server-ipv6 ${GATEWAY_ADDRESS_V6}/64
 # Use subnet topology for individual client IP assignment
 topology subnet
 # Push IPv6 support to connecting clients
