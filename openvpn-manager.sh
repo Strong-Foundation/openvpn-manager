@@ -1072,7 +1072,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
-local ${SERVER_HOST}
+local 0.0.0.0
 # Use port ${SERVER_PORT} for incoming VPN connections
 port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
@@ -1085,7 +1085,7 @@ dev tun
 # Define the IPv4 pool for clients (${PRIVATE_SUBNET_V4})
 server ${PRIVATE_SUBNET_V4} 255.255.255.0
 # Define the IPv6 pool for clients (a standard /64 subnet)
-server-ipv6 ${PRIVATE_SUBNET_V6}
+server-ipv6 ${$GATEWAY_ADDRESS_V6}/64
 # Use subnet topology for individual client IP assignment
 topology subnet
 # Push IPv6 support to connecting clients
@@ -1169,9 +1169,9 @@ group nogroup
 # Allow execution of external scripts with safe restrictions
 script-security 2
 # Enable IP forwarding when OpenVPN starts
-up \"${BASH_BINARY_PATH} -c 'bash ${CURRENT_FILE_PATH} --firewall'\"
+up \"${BASH_BINARY_PATH} -c 'sudo bash ${CURRENT_FILE_PATH} --firewall'\"
 # Disable IP forwarding when OpenVPN stops
-down \"${BASH_BINARY_PATH} -c 'bash ${CURRENT_FILE_PATH} --firewall'\"
+down \"${BASH_BINARY_PATH} -c 'sudo bash ${CURRENT_FILE_PATH} --firewall'\"
 
 # - Logging & Debugging -
 
