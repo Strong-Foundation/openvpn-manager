@@ -1438,21 +1438,30 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 
   # Function to remove an OpenVPN client
   function remove_openvpn_client() {
-    # Remove an OpenVPN client
-    NUMBER_OF_CLIENTS_INSTALLED=$(tail --lines=+2 ${OPENVPN_SERVER_CERTIFICATE_INDEX} | grep --count "^V")
+    # Count the number of installed OpenVPN clients
+    NUMBER_OF_CLIENTS_INSTALLED=$(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | grep --count "^V")
     # Check if there are any clients installed
-    if [[ $NUMBER_OF_CLIENTS_INSTALLED == "0" ]]; then
-      echo "Error: You have no clients installed. Please install one first."
-      exit
+    if [[ "${NUMBER_OF_CLIENTS_INSTALLED}" == "0" ]]; then
+      echo "Error: No OpenVPN clients found."
+      exit 1
     fi
-    # List all clients
-    tail --lines=+2 ${OPENVPN_SERVER_CERTIFICATE_INDEX} | awk -F'/CN=' '/^V/ {print $2}'
-    # Take client name input
-    read -rp "Select the client to revoke: " CLIENT_NAME
+    echo "Which OpenVPN client would you like to remove?"
+    # List all clients with numbers for selection
+    CLIENTS=($(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}'))
+    # Display the clients with a numbered list
+    PS3="Select a client (enter the number): "
+    select CLIENT_NAME in "${CLIENTS[@]}"; do
+      if [[ -n "$CLIENT_NAME" ]]; then
+        break
+      else
+        echo "Invalid selection. Please choose a valid number."
+      fi
+    done
     # Revoke the client certificate
-    ${OPENVPN_SERVER_EASY_RSA_SCRIPT} --pki-dir=${OPENVPN_PKI_DIRECTORY} --vars=${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE} revoke "${CLIENT_NAME}"
-    # Remove the client ovpn file
+    "${OPENVPN_SERVER_EASY_RSA_SCRIPT}" --pki-dir="${OPENVPN_PKI_DIRECTORY}" --vars="${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}" revoke "${CLIENT_NAME}"
+    # Remove the client .ovpn file
     rm -f "${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
+    echo "OpenVPN client '${CLIENT_NAME}' has been successfully removed."
   }
 
   # Function to reinstall the OpenVPN service
