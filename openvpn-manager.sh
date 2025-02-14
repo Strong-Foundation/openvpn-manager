@@ -1072,7 +1072,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
     OPEN_VPN_SERVER_CONFIG="# - Network Interface & Port Settings -
 
 # Listen on all available interfaces (IPv6 & IPv4 via dual-stack)
-local 0.0.0.0
+local 0.0.0.0 # ${SERVER_HOST}
 # Use port ${SERVER_PORT} for incoming VPN connections
 port ${SERVER_PORT}
 # Use UDP over IPv6 (dual-stack will allow IPv4 if IPV6_V6ONLY is disabled)
@@ -1380,7 +1380,7 @@ else
     # Extract the current protocol used by the server.
     OPENVPN_SERVER_PROTOCOL_EXTRACT=$(grep -E "^proto [a-z0-9]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
     # Extract the current IP used by the server.
-    OPENVPN_SERVER_IP_EXTRACT=$(grep -E "^local [0-9.]+" ${OPENVPN_SERVER_CONFIG} | awk '{print $2}')
+    OPENVPN_SERVER_IP_EXTRACT=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | awk -F'#' '{print $2}' | sed 's/^[ \t]*//;s/[ \t]*$//')
     # Create the OpenVPN client configuration file with the specified settings.
     OPEN_VPN_CLIENT_CONFIG="# - Client Basic Settings -
 #
