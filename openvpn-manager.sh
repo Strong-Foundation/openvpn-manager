@@ -1537,9 +1537,9 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Replace the server port
     sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_SERVER_CONFIG}
     # Find all the configs from the config direcotry.
-    
+
     # Replace the port for the client configs.
-    
+
   }
 
   # Function to remove all OpenVPN clients
@@ -1572,19 +1572,24 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       sysctl --write net.ipv4.ip_forward=1
       # Enable IP forwarding for IPv6
       sysctl --write net.ipv6.conf.all.forwarding=1
-      # Create a new nftables table for the OpenVPN server
-      nft add table inet openvpn-"${OPENVPN_SERVER_PUB_NIC}"
-      # Add a new chain for the OpenVPN server
-      nft add chain inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting { type nat hook postrouting priority srcnat \; }
-      # Add a new rule to the chain to masquerade traffic
-      nft add rule inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting oifname "${OPENVPN_SERVER_PUB_NIC}" masquerade
+      # Check if the nftables table for the OpenVPN server exists
+      if [[ "$(nft list ruleset)" != *openvpn* ]]; then
+        # Create a new nftables table for the OpenVPN server
+        nft add table inet openvpn-"${OPENVPN_SERVER_PUB_NIC}"
+        # Add a new chain for the OpenVPN server
+        nft add chain inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting { type nat hook postrouting priority srcnat \; }
+        # Add a new rule to the chain to masquerade traffic
+        nft add rule inet openvpn-"${OPENVPN_SERVER_PUB_NIC}" postrouting oifname "${OPENVPN_SERVER_PUB_NIC}" masquerade
+      fi
     else
       # Disable IP forwarding for IPv4
       sysctl --write net.ipv4.ip_forward=0
       # Disable IP forwarding for IPv6
       sysctl --write net.ipv6.conf.all.forwarding=0
-      # Flush the nftables table for the OpenVPN server
-      nft delete table inet openvpn-"${OPENVPN_SERVER_PUB_NIC}"
+      if [[ "$(nft list ruleset)" == *openvpn* ]]; then
+        # Flush the nftables table for the OpenVPN server
+        nft delete table inet openvpn-"${OPENVPN_SERVER_PUB_NIC}"
+      fi
     fi
   }
 
