@@ -1472,7 +1472,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     fi
     echo "Which OpenVPN client would you like to remove?"
     # List all clients with numbers for selection
-    CLIENTS=($(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}'))
+    CLIENTS=$(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}')
     # Display the clients with a numbered list
     PS3="Select a client (enter the number): "
     select CLIENT_NAME in "${CLIENTS[@]}"; do
@@ -1701,7 +1701,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     fi
     echo "Here are the available OpenVPN clients:"
     # List all clients with numbers for selection
-    CLIENTS=($(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}'))
+    CLIENTS=$(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}')
     # Display the clients with a numbered list
     PS3="Select a client:"
     select CLIENT_NAME in "${CLIENTS[@]}"; do
