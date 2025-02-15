@@ -1592,7 +1592,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Continue prompting until a valid port (1–65535) is provided
     until [[ "${NEW_OPENVPN_PORT}" =~ ^[0-9]+$ ]] && [ "${NEW_OPENVPN_PORT}" -ge 1 ] && [ "${NEW_OPENVPN_PORT}" -le 65535 ]; do
       # Ask the user to input a custom port number, with 1194 as the default option
-      read -rp "Custom port [1-65535]: " -e -i 1194 SERVER_PORT
+      read -rp "Custom port [1-65535]: " -e -i 1194 NEW_OPENVPN_PORT
     done
     # If no input is provided for the custom port, default to 1194
     if [ -z "${NEW_OPENVPN_PORT}" ]; then
