@@ -1604,12 +1604,14 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       echo "Error: The port ${NEW_OPENVPN_PORT} is already in use. Please choose a different port."
       exit
     fi
-    # Replace the server port
+    # Replace the port in the server config.
     sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_SERVER_CONFIG}
     # Find all the configs from the config direcotry.
-
-    # Replace the port for the client configs.
-
+    OPENVPN_CLIENT_CONFIG_FILES=$(find "${OPENVPN_SERVER_CLIENT_DIRECTORY}" -type f -name "*.ovpn")
+    for OPENVPN_CLIENT_CONFIG_FILE in "${OPENVPN_CLIENT_CONFIG_FILES[@]}"; do
+      echo "Opening the current file: ${OPENVPN_CLIENT_CONFIG_FILE}"
+      sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_CLIENT_CONFIG_FILE}
+    done
   }
 
   # Function to remove all OpenVPN clients
