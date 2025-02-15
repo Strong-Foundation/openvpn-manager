@@ -1616,6 +1616,34 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
         echo "No IP address provided. Aborting."
         exit
       fi
+      # Extract the current IP address from the OpenVPN config file
+      CURRENT_IP_METHOD=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+      # If the current IP address is IPv4, set the new server IP to the DEFAULT_INTERFACE_IPV4
+      if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV4}
+      fi
+      # If the current IP address is IPv6, set the new server IP to the DEFAULT_INTERFACE_IPV6
+      if [[ ${CURRENT_IP_METHOD} == *"["* ]]; then
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV6}
+      fi
+      # If the old server host is different from the new one, update the OpenVPN config
+      ESCAPED_OLD_SERVER_HOST=$(echo "$OLD_SERVER_HOST" | sed 's/[&/\]/\\&/g')
+      if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+        echo "The server IP address in the configuration file ${OPENVPN_SERVER_CONFIG} has been updated to ${NEW_SERVER_HOST}"
+        sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${OPENVPN_SERVER_CONFIG}
+      fi
+      # Find all .ovpn files and store them in the COMPLETE_CLIENT_LIST array
+      COMPLETE_CLIENT_LIST=$(find ${OPENVPN_SERVER_CLIENT_DIRECTORY} -type f -name "*.ovpn")
+      # Loop through the array and print each file path
+      for CLIENT_PATH in "${COMPLETE_CLIENT_LIST[@]}"; do
+        # If the old server host is different from the new one, update the OpenVPN config
+        if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+          echo "The server IP address in the configuration file ${CLIENT_PATH} has been updated to ${NEW_SERVER_HOST}"
+          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${CLIENT_PATH}
+        fi
+      done
       ;;
     esac
   }
