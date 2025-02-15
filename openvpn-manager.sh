@@ -1605,7 +1605,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       exit
     fi
     # Replace the port in the server config.
-    sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_SERVER_CONFIG}
+    sed -i "/^port /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_SERVER_CONFIG}
     # Find all the configs from the config direcotry.
     OPENVPN_CLIENT_CONFIG_FILES=$(find "${OPENVPN_SERVER_CLIENT_DIRECTORY}" -type f -name "*.ovpn")
     for OPENVPN_CLIENT_CONFIG_FILE in "${OPENVPN_CLIENT_CONFIG_FILES[@]}"; do
