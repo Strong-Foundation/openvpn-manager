@@ -1607,7 +1607,26 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
   # Function to show OpenVPN client configuration
   function show_openvpn_client_configuration() {
     # Show OpenVPN client configuration
-    echo "show_openvpn_client_configuration"
+    # Count the number of installed OpenVPN clients
+    NUMBER_OF_CLIENTS_INSTALLED=$(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | grep --count "^V")
+    # Check if there are any clients installed
+    if [[ "${NUMBER_OF_CLIENTS_INSTALLED}" == "0" ]]; then
+      echo "Error: No OpenVPN clients found."
+      exit 1
+    fi
+    echo "Here are the available OpenVPN clients:"
+    # List all clients with numbers for selection
+    CLIENTS=($(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}'))
+    # Display the clients with a numbered list
+    PS3="Select a client (enter the number to view more details, or press ENTER to quit): "
+    select CLIENT_NAME in "${CLIENTS[@]}"; do
+      if [[ -n "${CLIENT_NAME}" ]]; then
+        echo "The OpenVPN client config is saved at ${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
+        break
+      else
+        echo "Invalid selection. Please choose a valid number."
+      fi
+    done
   }
 
   # Function to verify OpenVPN configuration
