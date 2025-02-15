@@ -1685,8 +1685,25 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 
   # Function to remove all OpenVPN clients
   function remove_all_openvpn_clients() {
-    # Remove all OpenVPN clients
-    echo "remove_all_openvpn_clients"
+    # Count the number of installed OpenVPN clients
+    NUMBER_OF_CLIENTS_INSTALLED=$(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | grep --count "^V")
+    # Check if there are any clients installed
+    if [[ "${NUMBER_OF_CLIENTS_INSTALLED}" == "0" ]]; then
+      echo "Error: No OpenVPN clients found."
+      exit
+    fi
+    # List all clients' common names
+    CLIENTS=($(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}'))
+    # Revoke each client's certificate and remove their .ovpn file
+    for CLIENT_NAME in "${CLIENTS[@]}"; do
+      echo "Revoking certificate and removing configuration for client: ${CLIENT_NAME}"
+      # Revoke the client certificate
+      "${OPENVPN_SERVER_EASY_RSA_SCRIPT}" --pki-dir="${OPENVPN_PKI_DIRECTORY}" --vars="${OPENVPN_SERVER_EASY_RSA_VARIABLES_FILE}" revoke "${CLIENT_NAME}"
+      # Remove the client .ovpn file
+      echo "Removing the client configuration for client: ${CLIENT_NAME}"
+      rm -f "${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
+    done
+
   }
 
   # Function to show OpenVPN client configuration
