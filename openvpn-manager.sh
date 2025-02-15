@@ -1595,7 +1595,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       # If the old server host is different from the new one, update the OpenVPN config
       ESCAPED_OLD_SERVER_HOST=$(echo "$OLD_SERVER_HOST" | sed 's/[&/\]/\\&/g')
       if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
-        sed --in-place "/${ESCAPED_OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${OPENVPN_SERVER_CONFIG}
+        sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${OPENVPN_SERVER_CONFIG}
       fi
       # Find all .ovpn files and store them in the COMPLETE_CLIENT_LIST array
       COMPLETE_CLIENT_LIST=$(find ${OPENVPN_SERVER_CLIENT_DIRECTORY} -type f -name "*.ovpn")
@@ -1604,7 +1604,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
         echo "$CLIENT_PATH"
         # If the old server host is different from the new one, update the OpenVPN config
         if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
-          sed --in-place "1s/${ESCAPED_OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${CLIENT_PATH}
+          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${CLIENT_PATH}
         fi
       done
       ;;
