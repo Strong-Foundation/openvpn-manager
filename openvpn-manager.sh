@@ -300,7 +300,6 @@ function usage_guide() {
   echo "  --list        Lists all active OpenVPN connections"
   echo "  --add         Adds a new client configuration to the OpenVPN server"
   echo "  --remove      Removes a specified client from the OpenVPN server"
-  echo "  --reinstall   Reinstalls the OpenVPN service, keeping the current configuration"
   echo "  --uninstall   Uninstalls the OpenVPN service from your system"
   echo "  --update      Updates the OpenVPN Manager to the latest version"
   echo "  --backup      Creates a backup of your current OpenVPN configuration"
@@ -343,33 +342,29 @@ function usage() {
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=6}
       ;;
-    --reinstall) # If it's "--reinstall", set the variable OPENVPN_OPTIONS to 7
+    --uninstall) # If it's "--uninstall", set the variable OPENVPN_OPTIONS to 7
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=7}
       ;;
-    --uninstall) # If it's "--uninstall", set the variable OPENVPN_OPTIONS to 8
+    --update) # If it's "--update", set the variable OPENVPN_OPTIONS to 8
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=8}
       ;;
-    --update) # If it's "--update", set the variable OPENVPN_OPTIONS to 9
+    --backup) # If it's "--backup", set the variable OPENVPN_OPTIONS to 9
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=9}
       ;;
-    --backup) # If it's "--backup", set the variable OPENVPN_OPTIONS to 10
+    --restore) # If it's "--restore", set the variable OPENVPN_OPTIONS to 10
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=10}
       ;;
-    --restore) # If it's "--restore", set the variable OPENVPN_OPTIONS to 11
+    --purge) # If it's "--purge", set the variable OPENVPN_OPTIONS to 13
       shift
-      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=11}
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=13}
       ;;
-    --purge) # If it's "--purge", set the variable OPENVPN_OPTIONS to 14
+    --firewall) # If it's "--firewall", set the variable OPENVPN_OPTIONS to 16
       shift
-      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=14}
-      ;;
-    --firewall) # If it's "--firewall", set the variable OPENVPN_OPTIONS to 15
-      shift
-      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=17}
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=16}
       ;;
     --help) # If it's "--help", call the function usage_guide
       shift
@@ -1494,12 +1489,6 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     echo "OpenVPN client '${CLIENT_NAME}' has been successfully removed."
   }
 
-  # Function to reinstall the OpenVPN service
-  function reinstall_openvpn() {
-    # Reinstall the OpenVPN service
-    echo "reinstall_openvpn"
-  }
-
   # Function to uninstall the OpenVPN service
   function uninstall_openvpn() {
     # Uninstall the OpenVPN service
@@ -1783,20 +1772,19 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     echo "   4) Restart OpenVPN service"
     echo "   5) Add a new OpenVPN client"
     echo "   6) Remove an OpenVPN client"
-    echo "   7) Reinstall OpenVPN service"
-    echo "   8) Uninstall OpenVPN service"
-    echo "   9) Update this management script"
-    echo "   10) Backup OpenVPN configuration"
-    echo "   11) Restore OpenVPN configuration"
-    echo "   12) Update OpenVPN interface IP"
-    echo "   13) Update OpenVPN interface port"
-    echo "   14) Remove all OpenVPN clients"
-    echo "   15) Show OpenVPN client configuration"
-    echo "   16) Verify OpenVPN configuration integrity"
-    echo "   17) Network Firewall Configuration"
+    echo "   7) Uninstall OpenVPN service"
+    echo "   8) Update this management script"
+    echo "   9) Backup OpenVPN configuration"
+    echo "   10) Restore OpenVPN configuration"
+    echo "   11) Update OpenVPN interface IP"
+    echo "   12) Update OpenVPN interface port"
+    echo "   13) Remove all OpenVPN clients"
+    echo "   14) Show OpenVPN client configuration"
+    echo "   15) Verify OpenVPN configuration integrity"
+    echo "   16) Network Firewall Configuration"
 
     # Keep asking for a valid option until one is selected
-    until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 17 ]; do
+    until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 16 ]; do
       read -rp "Select an Option [1-17]: " -e -i 0 OPENVPN_OPTIONS
     done
 
@@ -1827,46 +1815,42 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       remove_openvpn_client
       ;;
     7)
-      # Reinstall the OpenVPN service
-      reinstall_openvpn
-      ;;
-    8)
       # Uninstall the OpenVPN service
       uninstall_openvpn
       ;;
-    9)
+    8)
       # Update the OpenVPN management script
       update_openvpn_script
       ;;
-    10)
+    9)
       # Backup the current OpenVPN configuration
       backup_openvpn_config
       ;;
-    11)
+    10)
       # Restore a previously backed-up OpenVPN configuration
       restore_openvpn_config
       ;;
-    12)
+    11)
       # Update the OpenVPN interface's IP address
       update_openvpn_interface_ip
       ;;
-    13)
+    12)
       # Update the OpenVPN interface's listening port
       update_openvpn_interface_port
       ;;
-    14)
+    13)
       # Remove all OpenVPN clients (peers)
       remove_all_openvpn_clients
       ;;
-    15)
+    14)
       # Generate a QR code for OpenVPN configuration for clients
       show_openvpn_client_configuration
       ;;
-    16)
+    15)
       # Verify OpenVPN configurations for integrity and correctness
       verify_openvpn_configuration
       ;;
-    17)
+    16)
       # Network Firewall Configuration
       network_firewall_configuration
       ;;
