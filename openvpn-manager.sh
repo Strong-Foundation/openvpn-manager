@@ -1622,7 +1622,6 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     select CLIENT_NAME in "${CLIENTS[@]}"; do
       if [[ -n "${CLIENT_NAME}" ]]; then
         echo "The OpenVPN client config is saved at ${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
-        cat "${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
         break
       else
         echo "Invalid selection. Please choose a valid number."
