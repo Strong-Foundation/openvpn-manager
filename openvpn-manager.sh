@@ -1618,10 +1618,11 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # List all clients with numbers for selection
     CLIENTS=($(tail --lines=+2 "${OPENVPN_SERVER_CERTIFICATE_INDEX}" | awk -F'/CN=' '/^V/ {print $2}'))
     # Display the clients with a numbered list
-    PS3="Select a client (enter the number to view more details, or press ENTER to quit): "
+    PS3="Select a client:"
     select CLIENT_NAME in "${CLIENTS[@]}"; do
       if [[ -n "${CLIENT_NAME}" ]]; then
         echo "The OpenVPN client config is saved at ${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
+        cat "${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
         break
       else
         echo "Invalid selection. Please choose a valid number."
