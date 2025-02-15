@@ -40,7 +40,7 @@
 function check_root() {
   if [ "$(id -u)" -ne 0 ]; then
     echo "Error: This script must be run as root."
-    exit 1
+    exit
   fi
 }
 
@@ -137,7 +137,7 @@ function check_current_init_system() {
   if [[ ! "${ALLOWED_INIT_SYSTEMS[*]}" =~ ${CURRENT_INIT_SYSTEM} ]]; then
     # If the init system is not allowed, display an error message and exit with an error code.
     echo "Error: The '${CURRENT_INIT_SYSTEM}' initialization system is not supported. Please stay tuned for future updates."
-    exit 1 # Exit the script with an error code.
+    exit # Exit the script with an error code.
   fi
 }
 
@@ -261,7 +261,7 @@ function check_local_tun() {
     if [ ! -e "${LOCAL_TUN_PATH}" ]; then
       # If still not found, print an error and exit with an error code
       echo "Error: ${LOCAL_TUN_PATH} still not found after loading the module!"
-      exit 1
+      exit
     else
       # If the device is found after loading the module, print a success message
       echo "TUN device found at ${LOCAL_TUN_PATH}."
@@ -1468,7 +1468,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Check if there are any clients installed
     if [[ "${NUMBER_OF_CLIENTS_INSTALLED}" == "0" ]]; then
       echo "Error: No OpenVPN clients found."
-      exit 1
+      exit
     fi
     echo "Which OpenVPN client would you like to remove?"
     # List all clients with numbers for selection
@@ -1581,17 +1581,17 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       # Automatically detect the current IP address of the OpenVPN interface
       get_network_information
       # Extract the current IP address from the OpenVPN config file
-      CURRENT_IP_METHOD=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
+      CURRENT_IP_METHOD=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
 
       # If the current IP address is IPv4, set the new server IP to the DEFAULT_INTERFACE_IPV4
       if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
-        OLD_SERVER_HOST=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2 | cut --delimiter=":" --fields=1)
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
         NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV4}
       fi
 
       # If the current IP address is IPv6, set the new server IP to the DEFAULT_INTERFACE_IPV6
       if [[ ${CURRENT_IP_METHOD} == *"["* ]]; then
-        OLD_SERVER_HOST=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2 | cut --delimiter="[" --fields=2 | cut --delimiter="]" --fields=1)
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
         NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV6}
       fi
 
@@ -1600,22 +1600,12 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
         sed --in-place "1s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${OPENVPN_SERVER_CONFIG}
       fi
 
-      # Create a list of existing OpenVPN clients from the OpenVPN config file
-      COMPLETE_CLIENT_LIST=$(grep remote ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
-
-      # Add the clients to the USER_LIST array
-      for CLIENT_LIST_ARRAY in ${COMPLETE_CLIENT_LIST}; do
-        USER_LIST[ADD_CONTENT]=${CLIENT_LIST_ARRAY}
-        ((ADD_CONTENT++))
-      done
-
-      # Loop through the clients in the USER_LIST array
-      for CLIENT_NAME in "${USER_LIST[@]}"; do
-        # Check if the client's config file exists
-        if [ -f "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn" ]; then
-          # Update the server host in the client's config file
-          sed --in-place "s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn"
-        fi
+      # Find all .ovpn files and store them in the COMPLETE_CLIENT_LIST array
+      COMPLETE_CLIENT_LIST=$(find ${OPENVPN_SERVER_CLIENT_DIRECTORY} -type f -name "*.ovpn")
+      # Loop through the array and print each file path
+      for CLIENT_PATH in "${COMPLETE_CLIENT_LIST[@]}"; do
+        echo "$CLIENT_PATH"
+        sed --in-place "1s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${CLIENT_PATH}
       done
       ;;
 
@@ -1624,34 +1614,35 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       read -rp "Enter the new server IP address: " NEW_SERVER_HOST
       if [ -z "${NEW_SERVER_HOST}" ]; then
         echo "No IP address provided. Aborting."
-        exit 1
+        exit
       fi
 
-      # Extract the current server host for manual update
-      CURRENT_IP_METHOD=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
+      # Extract the current IP address from the OpenVPN config file
+      CURRENT_IP_METHOD=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
 
+      # If the current IP address is IPv4, set the new server IP to the DEFAULT_INTERFACE_IPV4
       if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
-        OLD_SERVER_HOST=$(echo "${CURRENT_IP_METHOD}" | cut --delimiter=":" --fields=1)
-      else
-        OLD_SERVER_HOST=$(echo "${CURRENT_IP_METHOD}" | cut --delimiter="[" --fields=2 | cut --delimiter="]" --fields=1)
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV4}
       fi
 
-      # Update the OpenVPN server config file with the new IP
-      sed --in-place "1s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${OPENVPN_SERVER_CONFIG}
+      # If the current IP address is IPv6, set the new server IP to the DEFAULT_INTERFACE_IPV6
+      if [[ ${CURRENT_IP_METHOD} == *"["* ]]; then
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV6}
+      fi
 
-      # Update the client configurations
-      COMPLETE_CLIENT_LIST=$(grep remote ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
+      # If the old server host is different from the new one, update the OpenVPN config
+      if [ "${OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+        sed --in-place "1s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${OPENVPN_SERVER_CONFIG}
+      fi
 
-      for CLIENT_LIST_ARRAY in ${COMPLETE_CLIENT_LIST}; do
-        USER_LIST[ADD_CONTENT]=${CLIENT_LIST_ARRAY}
-        ADD_CONTENT=$((${ADD_CONTENT} + 1))
-      done
-
-      # Loop through the clients and update their configurations
-      for CLIENT_NAME in "${USER_LIST[@]}"; do
-        if [ -f "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn" ]; then
-          sed --in-place "s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn"
-        fi
+      # Find all .ovpn files and store them in the COMPLETE_CLIENT_LIST array
+      COMPLETE_CLIENT_LIST=$(find ${OPENVPN_SERVER_CLIENT_DIRECTORY} -type f -name "*.ovpn")
+      # Loop through the array and print each file path
+      for CLIENT_PATH in "${COMPLETE_CLIENT_LIST[@]}"; do
+        echo "$CLIENT_PATH"
+        sed --in-place "1s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${CLIENT_PATH}
       done
       ;;
     esac
@@ -1706,7 +1697,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Check if there are any clients installed
     if [[ "${NUMBER_OF_CLIENTS_INSTALLED}" == "0" ]]; then
       echo "Error: No OpenVPN clients found."
-      exit 1
+      exit
     fi
     echo "Here are the available OpenVPN clients:"
     # List all clients with numbers for selection
