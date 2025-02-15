@@ -1557,14 +1557,53 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 
   # Function to backup the OpenVPN configuration
   function backup_openvpn_config() {
-    # Backup the OpenVPN configuration
-    echo "backup_openvpn_config"
+    # If the OpenVPN config backup file exists, remove it
+    if [ -f "${OPENVPN_CONFIG_BACKUP}" ]; then
+      rm --force ${OPENVPN_CONFIG_BACKUP}
+      echo "Removing existing backup..."
+    fi
+    # If the system backup path directory does not exist, create it along with any necessary parent directories
+    if [ ! -d "${SYSTEM_BACKUP_PATH}" ]; then
+      mkdir --parents ${SYSTEM_BACKUP_PATH}
+      echo "Creating backup directory..."
+    fi
+    # If the OpenVPN path directory exists, proceed with the backup process
+    if [ -d "${OPENVPN_PATH}" ]; then
+      # Generate a random 50-character hexadecimal backup password and store it in a file
+      BACKUP_PASSWORD="$(openssl rand -hex 10)"
+      echo "${BACKUP_PASSWORD}" >"${OPENVPN_BACKUP_PASSWORD_PATH}"
+      # Zip the OpenVPN config file using the generated backup password and save it as a backup
+      zip -P "${BACKUP_PASSWORD}" -rj ${OPENVPN_CONFIG_BACKUP} ${OPENVPN_CONFIG}
+      # Echo the backup password and path to the terminal
+      echo "Backup Password: ${BACKUP_PASSWORD}"
+      echo "Backup Path: ${OPENVPN_CONFIG_BACKUP}"
+      echo "Please save the backup password and path in a secure location."
+    fi
   }
 
   # Function to restore the OpenVPN configuration
   function restore_openvpn_config() {
-    # Restore the OpenVPN configuration
-    echo "restore_openvpn_config"
+    # Check if the OpenVPN config backup file does not exist, and if so, exit the script
+    if [ ! -f "${OPENVPN_CONFIG_BACKUP}" ]; then
+      echo "Error: The OpenVPN configuration backup file could not be found. Please ensure it exists and try again."
+      exit
+    fi
+    # Prompt the user to enter the backup password and store it in the OPENVPN_BACKUP_PASSWORD variable
+    read -rp "Backup Password: " -e -i "$(cat "${OPENVPN_BACKUP_PASSWORD_PATH}")" OPENVPN_BACKUP_PASSWORD
+    # If the OPENVPN_BACKUP_PASSWORD variable is empty, exit the script
+    if [ -z "${OPENVPN_BACKUP_PASSWORD}" ]; then
+      echo "Error: The backup password field is empty. Please provide a valid password."
+      exit
+    fi
+    # Unzip the backup file, overwriting existing files, using the specified backup password, and extract the contents to the OpenVPN path
+    unzip -o -P "${OPENVPN_BACKUP_PASSWORD}" "${OPENVPN_CONFIG_BACKUP}" -d "${OPENVPN_PATH}"
+    # If the current init system is systemd, enable and start the OpenVPN service
+    if [[ "${CURRENT_INIT_SYSTEM}" == *"systemd"* ]]; then
+      systemctl enable --now openvpn-server@server.service
+    # If the current init system is init, restart the OpenVPN service
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service openvpn-server@server.service start
+    fi
   }
 
   # Function to update the OpenVPN interface IP
@@ -1615,18 +1654,6 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       if [ -z "${NEW_SERVER_HOST}" ]; then
         echo "No IP address provided. Aborting."
         exit
-      fi
-      # Extract the current IP address from the OpenVPN config file
-      CURRENT_IP_METHOD=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
-      # If the current IP address is IPv4, set the new server IP to the DEFAULT_INTERFACE_IPV4
-      if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
-        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
-        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV4}
-      fi
-      # If the current IP address is IPv6, set the new server IP to the DEFAULT_INTERFACE_IPV6
-      if [[ ${CURRENT_IP_METHOD} == *"["* ]]; then
-        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
-        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV6}
       fi
       # If the old server host is different from the new one, update the OpenVPN config
       ESCAPED_OLD_SERVER_HOST=$(echo "$OLD_SERVER_HOST" | sed 's/[&/\]/\\&/g')
