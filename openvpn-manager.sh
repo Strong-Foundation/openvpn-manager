@@ -645,7 +645,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
         SERVER_PORT="1194" # Default port for OpenVPN
       fi
       # Check if the chosen custom port is already in use for UDP or TCP
-      if { [ "$(lsof -i UDP:"${SERVER_PORT}")" ] || [ "$(lsof -i TCP:"${SERVER_PORT}")" ]; }; then
+      if [ "$(lsof -i UDP:"${SERVER_PORT}")" ]; then
         # If the custom port is in use, display an error message and exit the script
         echo "Error: The port ${SERVER_PORT} is already in use. Please choose a different port."
         exit
@@ -1588,8 +1588,22 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
   # Function to update the OpenVPN interface port
   function update_openvpn_interface_port() {
     # Update the OpenVPN interface port
-    # Take in input for the new port
-    read -rp "Please enter a new port for OpenVPN: " NEW_OPENVPN_PORT
+    # If the user selects option 2, prompt for a custom port
+    # Continue prompting until a valid port (1–65535) is provided
+    until [[ "${NEW_OPENVPN_PORT}" =~ ^[0-9]+$ ]] && [ "${NEW_OPENVPN_PORT}" -ge 1 ] && [ "${NEW_OPENVPN_PORT}" -le 65535 ]; do
+      # Ask the user to input a custom port number, with 1194 as the default option
+      read -rp "Custom port [1-65535]: " -e -i 1194 SERVER_PORT
+    done
+    # If no input is provided for the custom port, default to 1194
+    if [ -z "${NEW_OPENVPN_PORT}" ]; then
+      NEW_OPENVPN_PORT="1194" # Default port for OpenVPN
+    fi
+    # Check if the chosen custom port is already in use for UDP or TCP
+    if [ "$(lsof -i UDP:"${NEW_OPENVPN_PORT}")" ]; then
+      # If the custom port is in use, display an error message and exit the script
+      echo "Error: The port ${NEW_OPENVPN_PORT} is already in use. Please choose a different port."
+      exit
+    fi
     # Replace the server port
     sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_SERVER_CONFIG}
     # Find all the configs from the config direcotry.
