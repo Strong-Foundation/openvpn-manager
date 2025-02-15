@@ -1580,9 +1580,92 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 
   # Function to update the OpenVPN interface IP
   function update_openvpn_interface_ip() {
-    # Update the OpenVPN interface IP
-    echo "update_openvpn_interface_ip"
-    sed -i "/^remote /s/[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/1.0.0.1/" ${OPENVPN_SERVER_CONFIG}
+    echo "How would you like to update the IP address?"
+    echo "  1) Automatically detect the current IP"
+    echo "  2) Manually specify the IP"
+    # Prompt the user until they enter a valid choice
+    until [[ "${IP_UPDATE_METHOD}" =~ ^[1-2]$ ]]; do
+      read -rp "Update Method [1-2]:" -e -i 1 IP_UPDATE_METHOD
+    done
+    case ${IP_UPDATE_METHOD} in
+    1)
+      # Automatically detect the current IP address of the OpenVPN interface
+      get_network_information
+      # Extract the current IP address from the OpenVPN config file
+      CURRENT_IP_METHOD=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
+
+      # If the current IP address is IPv4, set the new server IP to the DEFAULT_INTERFACE_IPV4
+      if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
+        OLD_SERVER_HOST=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2 | cut --delimiter=":" --fields=1)
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV4}
+      fi
+
+      # If the current IP address is IPv6, set the new server IP to the DEFAULT_INTERFACE_IPV6
+      if [[ ${CURRENT_IP_METHOD} == *"["* ]]; then
+        OLD_SERVER_HOST=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2 | cut --delimiter="[" --fields=2 | cut --delimiter="]" --fields=1)
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV6}
+      fi
+
+      # If the old server host is different from the new one, update the OpenVPN config
+      if [ "${OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+        sed --in-place "1s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${OPENVPN_SERVER_CONFIG}
+      fi
+
+      # Create a list of existing OpenVPN clients from the OpenVPN config file
+      COMPLETE_CLIENT_LIST=$(grep remote ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
+
+      # Add the clients to the USER_LIST array
+      for CLIENT_LIST_ARRAY in ${COMPLETE_CLIENT_LIST}; do
+        USER_LIST[ADD_CONTENT]=${CLIENT_LIST_ARRAY}
+        ((ADD_CONTENT++))
+      done
+
+      # Loop through the clients in the USER_LIST array
+      for CLIENT_NAME in "${USER_LIST[@]}"; do
+        # Check if the client's config file exists
+        if [ -f "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn" ]; then
+          # Update the server host in the client's config file
+          sed --in-place "s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn"
+        fi
+      done
+      ;;
+
+    2)
+      # Manually specify the new IP
+      read -rp "Enter the new server IP address: " NEW_SERVER_HOST
+      if [ -z "${NEW_SERVER_HOST}" ]; then
+        echo "No IP address provided. Aborting."
+        exit 1
+      fi
+
+      # Extract the current server host for manual update
+      CURRENT_IP_METHOD=$(head --lines=1 ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
+
+      if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
+        OLD_SERVER_HOST=$(echo "${CURRENT_IP_METHOD}" | cut --delimiter=":" --fields=1)
+      else
+        OLD_SERVER_HOST=$(echo "${CURRENT_IP_METHOD}" | cut --delimiter="[" --fields=2 | cut --delimiter="]" --fields=1)
+      fi
+
+      # Update the OpenVPN server config file with the new IP
+      sed --in-place "1s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" ${OPENVPN_SERVER_CONFIG}
+
+      # Update the client configurations
+      COMPLETE_CLIENT_LIST=$(grep remote ${OPENVPN_SERVER_CONFIG} | cut --delimiter=" " --fields=2)
+
+      for CLIENT_LIST_ARRAY in ${COMPLETE_CLIENT_LIST}; do
+        USER_LIST[ADD_CONTENT]=${CLIENT_LIST_ARRAY}
+        ADD_CONTENT=$((${ADD_CONTENT} + 1))
+      done
+
+      # Loop through the clients and update their configurations
+      for CLIENT_NAME in "${USER_LIST[@]}"; do
+        if [ -f "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn" ]; then
+          sed --in-place "s/${OLD_SERVER_HOST}/${NEW_SERVER_HOST}/" "${OPENVPN_CLIENT_PATH}/${CLIENT_NAME}.ovpn"
+        fi
+      done
+      ;;
+    esac
   }
 
   # Function to update the OpenVPN interface port
@@ -1612,6 +1695,12 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       echo "Opening the current file: ${OPENVPN_CLIENT_CONFIG_FILE}"
       sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_CLIENT_CONFIG_FILE}
     done
+    # Restart the OpenVPN service to apply the changes.
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl restart openvpn-server@server.service
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service openvpn-server@server.service restart
+    fi
   }
 
   # Function to remove all OpenVPN clients
