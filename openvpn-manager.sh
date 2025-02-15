@@ -40,7 +40,7 @@
 function check_root() {
   if [ "$(id -u)" -ne 0 ]; then
     echo "Error: This script must be run as root."
-    exit 1
+    exit
   fi
 }
 
@@ -137,7 +137,7 @@ function check_current_init_system() {
   if [[ ! "${ALLOWED_INIT_SYSTEMS[*]}" =~ ${CURRENT_INIT_SYSTEM} ]]; then
     # If the init system is not allowed, display an error message and exit with an error code.
     echo "Error: The '${CURRENT_INIT_SYSTEM}' initialization system is not supported. Please stay tuned for future updates."
-    exit 1 # Exit the script with an error code.
+    exit # Exit the script with an error code.
   fi
 }
 
@@ -261,7 +261,7 @@ function check_local_tun() {
     if [ ! -e "${LOCAL_TUN_PATH}" ]; then
       # If still not found, print an error and exit with an error code
       echo "Error: ${LOCAL_TUN_PATH} still not found after loading the module!"
-      exit 1
+      exit
     else
       # If the device is found after loading the module, print a success message
       echo "TUN device found at ${LOCAL_TUN_PATH}."
@@ -300,7 +300,6 @@ function usage_guide() {
   echo "  --list        Lists all active OpenVPN connections"
   echo "  --add         Adds a new client configuration to the OpenVPN server"
   echo "  --remove      Removes a specified client from the OpenVPN server"
-  echo "  --reinstall   Reinstalls the OpenVPN service, keeping the current configuration"
   echo "  --uninstall   Uninstalls the OpenVPN service from your system"
   echo "  --update      Updates the OpenVPN Manager to the latest version"
   echo "  --backup      Creates a backup of your current OpenVPN configuration"
@@ -343,33 +342,29 @@ function usage() {
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=6}
       ;;
-    --reinstall) # If it's "--reinstall", set the variable OPENVPN_OPTIONS to 7
+    --uninstall) # If it's "--uninstall", set the variable OPENVPN_OPTIONS to 7
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=7}
       ;;
-    --uninstall) # If it's "--uninstall", set the variable OPENVPN_OPTIONS to 8
+    --update) # If it's "--update", set the variable OPENVPN_OPTIONS to 8
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=8}
       ;;
-    --update) # If it's "--update", set the variable OPENVPN_OPTIONS to 9
+    --backup) # If it's "--backup", set the variable OPENVPN_OPTIONS to 9
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=9}
       ;;
-    --backup) # If it's "--backup", set the variable OPENVPN_OPTIONS to 10
+    --restore) # If it's "--restore", set the variable OPENVPN_OPTIONS to 10
       shift
       OPENVPN_OPTIONS=${OPENVPN_OPTIONS=10}
       ;;
-    --restore) # If it's "--restore", set the variable OPENVPN_OPTIONS to 11
+    --purge) # If it's "--purge", set the variable OPENVPN_OPTIONS to 13
       shift
-      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=11}
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=13}
       ;;
-    --purge) # If it's "--purge", set the variable OPENVPN_OPTIONS to 14
+    --firewall) # If it's "--firewall", set the variable OPENVPN_OPTIONS to 16
       shift
-      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=14}
-      ;;
-    --firewall) # If it's "--firewall", set the variable OPENVPN_OPTIONS to 15
-      shift
-      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=17}
+      OPENVPN_OPTIONS=${OPENVPN_OPTIONS=16}
       ;;
     --help) # If it's "--help", call the function usage_guide
       shift
@@ -1473,7 +1468,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Check if there are any clients installed
     if [[ "${NUMBER_OF_CLIENTS_INSTALLED}" == "0" ]]; then
       echo "Error: No OpenVPN clients found."
-      exit 1
+      exit
     fi
     echo "Which OpenVPN client would you like to remove?"
     # List all clients with numbers for selection
@@ -1492,12 +1487,6 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Remove the client .ovpn file
     rm -f "${OPENVPN_SERVER_CLIENT_DIRECTORY}/${CLIENT_NAME}.ovpn"
     echo "OpenVPN client '${CLIENT_NAME}' has been successfully removed."
-  }
-
-  # Function to reinstall the OpenVPN service
-  function reinstall_openvpn() {
-    # Reinstall the OpenVPN service
-    echo "reinstall_openvpn"
   }
 
   # Function to uninstall the OpenVPN service
@@ -1580,9 +1569,83 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
 
   # Function to update the OpenVPN interface IP
   function update_openvpn_interface_ip() {
-    # Update the OpenVPN interface IP
-    echo "update_openvpn_interface_ip"
-    sed -i "/^remote /s/[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+/1.0.0.1/" ${OPENVPN_SERVER_CONFIG}
+    echo "How would you like to update the IP address?"
+    echo "  1) Automatically detect the current IP"
+    echo "  2) Manually specify the IP"
+    # Prompt the user until they enter a valid choice
+    until [[ "${IP_UPDATE_METHOD}" =~ ^[1-2]$ ]]; do
+      read -rp "Update Method [1-2]:" -e -i 1 IP_UPDATE_METHOD
+    done
+    case ${IP_UPDATE_METHOD} in
+    1)
+      # Automatically detect the current IP address of the OpenVPN interface
+      get_network_information
+      # Extract the current IP address from the OpenVPN config file
+      CURRENT_IP_METHOD=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+      # If the current IP address is IPv4, set the new server IP to the DEFAULT_INTERFACE_IPV4
+      if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV4}
+      fi
+      # If the current IP address is IPv6, set the new server IP to the DEFAULT_INTERFACE_IPV6
+      if [[ ${CURRENT_IP_METHOD} == *"["* ]]; then
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV6}
+      fi
+      # If the old server host is different from the new one, update the OpenVPN config
+      ESCAPED_OLD_SERVER_HOST=$(echo "$OLD_SERVER_HOST" | sed 's/[&/\]/\\&/g')
+      if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+        echo "The server IP address in the configuration file ${OPENVPN_SERVER_CONFIG} has been updated to ${NEW_SERVER_HOST}"
+        sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${OPENVPN_SERVER_CONFIG}
+      fi
+      # Find all .ovpn files and store them in the COMPLETE_CLIENT_LIST array
+      COMPLETE_CLIENT_LIST=$(find ${OPENVPN_SERVER_CLIENT_DIRECTORY} -type f -name "*.ovpn")
+      # Loop through the array and print each file path
+      for CLIENT_PATH in "${COMPLETE_CLIENT_LIST[@]}"; do
+        # If the old server host is different from the new one, update the OpenVPN config
+        if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+          echo "The server IP address in the configuration file ${CLIENT_PATH} has been updated to ${NEW_SERVER_HOST}"
+          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${CLIENT_PATH}
+        fi
+      done
+      ;;
+    2)
+      # Manually specify the new IP
+      read -rp "Enter the new server IP address:" NEW_SERVER_HOST
+      if [ -z "${NEW_SERVER_HOST}" ]; then
+        echo "No IP address provided. Aborting."
+        exit
+      fi
+      # Extract the current IP address from the OpenVPN config file
+      CURRENT_IP_METHOD=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+      # If the current IP address is IPv4, set the new server IP to the DEFAULT_INTERFACE_IPV4
+      if [[ ${CURRENT_IP_METHOD} != *"["* ]]; then
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV4}
+      fi
+      # If the current IP address is IPv6, set the new server IP to the DEFAULT_INTERFACE_IPV6
+      if [[ ${CURRENT_IP_METHOD} == *"["* ]]; then
+        OLD_SERVER_HOST=$(grep "^local" ${OPENVPN_SERVER_CONFIG} | sed 's/.*#\s*\(.*\)/\1/')
+        NEW_SERVER_HOST=${DEFAULT_INTERFACE_IPV6}
+      fi
+      # If the old server host is different from the new one, update the OpenVPN config
+      ESCAPED_OLD_SERVER_HOST=$(echo "$OLD_SERVER_HOST" | sed 's/[&/\]/\\&/g')
+      if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+        echo "The server IP address in the configuration file ${OPENVPN_SERVER_CONFIG} has been updated to ${NEW_SERVER_HOST}"
+        sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${OPENVPN_SERVER_CONFIG}
+      fi
+      # Find all .ovpn files and store them in the COMPLETE_CLIENT_LIST array
+      COMPLETE_CLIENT_LIST=$(find ${OPENVPN_SERVER_CLIENT_DIRECTORY} -type f -name "*.ovpn")
+      # Loop through the array and print each file path
+      for CLIENT_PATH in "${COMPLETE_CLIENT_LIST[@]}"; do
+        # If the old server host is different from the new one, update the OpenVPN config
+        if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
+          echo "The server IP address in the configuration file ${CLIENT_PATH} has been updated to ${NEW_SERVER_HOST}"
+          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${CLIENT_PATH}
+        fi
+      done
+      ;;
+    esac
   }
 
   # Function to update the OpenVPN interface port
@@ -1612,6 +1675,12 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       echo "Opening the current file: ${OPENVPN_CLIENT_CONFIG_FILE}"
       sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_CLIENT_CONFIG_FILE}
     done
+    # Restart the OpenVPN service to apply the changes.
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl restart openvpn-server@server.service
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service openvpn-server@server.service restart
+    fi
   }
 
   # Function to remove all OpenVPN clients
@@ -1628,7 +1697,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Check if there are any clients installed
     if [[ "${NUMBER_OF_CLIENTS_INSTALLED}" == "0" ]]; then
       echo "Error: No OpenVPN clients found."
-      exit 1
+      exit
     fi
     echo "Here are the available OpenVPN clients:"
     # List all clients with numbers for selection
@@ -1694,20 +1763,19 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     echo "   4) Restart OpenVPN service"
     echo "   5) Add a new OpenVPN client"
     echo "   6) Remove an OpenVPN client"
-    echo "   7) Reinstall OpenVPN service"
-    echo "   8) Uninstall OpenVPN service"
-    echo "   9) Update this management script"
-    echo "   10) Backup OpenVPN configuration"
-    echo "   11) Restore OpenVPN configuration"
-    echo "   12) Update OpenVPN interface IP"
-    echo "   13) Update OpenVPN interface port"
-    echo "   14) Remove all OpenVPN clients"
-    echo "   15) Show OpenVPN client configuration"
-    echo "   16) Verify OpenVPN configuration integrity"
-    echo "   17) Network Firewall Configuration"
+    echo "   7) Uninstall OpenVPN service"
+    echo "   8) Update this management script"
+    echo "   9) Backup OpenVPN configuration"
+    echo "   10) Restore OpenVPN configuration"
+    echo "   11) Update OpenVPN interface IP"
+    echo "   12) Update OpenVPN interface port"
+    echo "   13) Remove all OpenVPN clients"
+    echo "   14) Show OpenVPN client configuration"
+    echo "   15) Verify OpenVPN configuration integrity"
+    echo "   16) Network Firewall Configuration"
 
     # Keep asking for a valid option until one is selected
-    until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 17 ]; do
+    until [[ "${OPENVPN_OPTIONS}" =~ ^[0-9]+$ ]] && [ "${OPENVPN_OPTIONS}" -ge 1 ] && [ "${OPENVPN_OPTIONS}" -le 16 ]; do
       read -rp "Select an Option [1-17]: " -e -i 0 OPENVPN_OPTIONS
     done
 
@@ -1738,46 +1806,42 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       remove_openvpn_client
       ;;
     7)
-      # Reinstall the OpenVPN service
-      reinstall_openvpn
-      ;;
-    8)
       # Uninstall the OpenVPN service
       uninstall_openvpn
       ;;
-    9)
+    8)
       # Update the OpenVPN management script
       update_openvpn_script
       ;;
-    10)
+    9)
       # Backup the current OpenVPN configuration
       backup_openvpn_config
       ;;
-    11)
+    10)
       # Restore a previously backed-up OpenVPN configuration
       restore_openvpn_config
       ;;
-    12)
+    11)
       # Update the OpenVPN interface's IP address
       update_openvpn_interface_ip
       ;;
-    13)
+    12)
       # Update the OpenVPN interface's listening port
       update_openvpn_interface_port
       ;;
-    14)
+    13)
       # Remove all OpenVPN clients (peers)
       remove_all_openvpn_clients
       ;;
-    15)
+    14)
       # Generate a QR code for OpenVPN configuration for clients
       show_openvpn_client_configuration
       ;;
-    16)
+    15)
       # Verify OpenVPN configurations for integrity and correctness
       verify_openvpn_configuration
       ;;
-    17)
+    16)
       # Network Firewall Configuration
       network_firewall_configuration
       ;;
