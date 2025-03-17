@@ -1,14 +1,20 @@
 # Build all the dockerfile and than run it.
 name: Docker Build and Run Sequential
 
+# Define the events that trigger the workflow
 on:
-  # This allows you to trigger the workflow manually from the GitHub UI
-  workflow_dispatch:
-
-  # This triggers the workflow when there is a push to the main branch
+  # Trigger the workflow on push for .sh files
   push:
-    branches:
-      - main # Monitor the 'main' branch for any pushes
+    paths:
+      - "**.sh"
+      - "**Dockerfile"
+  # Trigger the workflow on pull request for .sh files
+  pull_request:
+    paths:
+      - "**.sh"
+      - "**Dockerfile"
+  # Allow manual triggering of the workflow
+  workflow_dispatch:
 
 jobs:
   build-and-run:
