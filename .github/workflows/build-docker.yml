@@ -1,0 +1,28 @@
+# Build all the dockerfile and than run it.
+name: Docker Build and Run Sequential
+
+on:
+  # This allows you to trigger the workflow manually from the GitHub UI
+  workflow_dispatch:
+
+  # This triggers the workflow when there is a push to the main branch
+  push:
+    branches:
+      - main # Monitor the 'main' branch for any pushes
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest # This job will run on the latest Ubuntu runner
+
+    steps:
+      # Step 1: Checkout the repository so Docker can access the files
+      - name: Checkout repository
+        uses: actions/checkout@v2 # Action to checkout the code from the repository
+
+      # Step 2: Build the Docker image from Dockerfile.server
+      - name: Build Docker image from Dockerfile.server
+        run: docker build -t openvpn-server-image -f Dockerfile.server . # Build the image with the tag 'openvpn-server-image'
+
+      # Step 3: Run the Docker container for openvpn-server image
+      - name: Run Docker container for openvpn-server
+        run: docker run -d --name openvpn-server-container openvpn-server-image # Run the container in detached mode
