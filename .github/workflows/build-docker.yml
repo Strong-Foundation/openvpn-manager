@@ -29,4 +29,4 @@ jobs:
 
       # Step 4: Check the openvpn server logs.
       - name: Check the logs for the openvpn-server
-        run: docker exec -it openvpn-server cat /var/log/openvpn.log
+        run: docker exec -it openvpn-server-container cat /var/log/openvpn.log
