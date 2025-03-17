@@ -1,29 +1,32 @@
+# Use the latest version of the official Ubuntu image as the base for the container
 FROM ubuntu:latest
 
-# Prevent interactive prompts
+# Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install OpenVPN and required packages
-RUN apt-get update &&  \
-    apt-get install openvpn iproute2 iptables curl -y
+# Update the package lists and install OpenVPN and required utilities like iproute2, iptables, and curl
+RUN apt-get update && \
+    apt-get install -y openvpn iproute2 iptables curl
 
-# Create OpenVPN directory
+# Create the directory where OpenVPN configuration files will be stored
 RUN mkdir -p /etc/openvpn
 
-# Copy OpenVPN client configuration
+# Copy the OpenVPN client configuration file (aws.ovpn) from your local machine to the container
 COPY aws.ovpn /etc/openvpn/client.ovpn
 
-# Start OpenVPN and sleep indefinitely to keep the container running
-CMD openvpn --config /etc/openvpn/client.ovpn --daemon --log /var/log/openvpn.log && sleep infinity
+# Set the default command to run OpenVPN with the provided configuration file,
+# run it as a daemon (background), and log to /var/log/openvpn.log. 
+# Then, continuously tail the log file to keep the container running and show the OpenVPN logs
+CMD ["openvpn", "--config", "/etc/openvpn/client.ovpn", "--daemon", "--log", "/var/log/openvpn.log", "&&", "tail", "-f", "/var/log/openvpn.log"]
 
-# Build the Docker Image
+# Instructions to build the Docker image (uncomment this line when you're ready to build the image)
 # docker build -f Dockerfile.client -t openvpn-client .
 
-# Run the Container
+# Instructions to run the container (uncomment these lines when you're ready to run it)
 # docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name openvpn-client --cap-add=NET_ADMIN --device /dev/net/tun openvpn-client
 
-# Access the Running Container
+# Instructions to access the running container and open an interactive bash shell (uncomment this line when you're ready to access it)
 # docker exec -it openvpn-client bash
 
-# Check OpenVPN Logs
+# Instructions to check the OpenVPN logs (uncomment this line when you're ready to view the logs)
 # docker exec -it openvpn-client cat /var/log/openvpn.log
