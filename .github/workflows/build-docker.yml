@@ -32,7 +32,3 @@ jobs:
       # Step 3: Run the Docker container for openvpn-server image
       - name: Run Docker container for openvpn-server
         run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name openvpn-server-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp openvpn-server-image # Run the container in detached mode
-
-      # Step 4: Check the openvpn server logs.
-      - name: Check the logs for the openvpn-server
-        run: docker exec -i openvpn-server-container cat /var/log/openvpn.log
