@@ -33,7 +33,7 @@ jobs:
 
       # Step 3: Run the Docker container for almalinux image
       - name: Run Docker container for almalinux
-        run: docker run -d --name almalinux-container almalinux-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name almalinux-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp almalinux-image # Run the container in detached mode
 
       # Step 4: Build the Docker image from Dockerfile.alpine
       - name: Build Docker image from Dockerfile.alpine
@@ -41,7 +41,7 @@ jobs:
 
       # Step 5: Run the Docker container for alpine image
       - name: Run Docker container for alpine
-        run: docker run -d --name alpine-container alpine-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name alpine-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp alpine-image # Run the container in detached mode
 
       # Step 6: Build the Docker image from Dockerfile.archlinux
       - name: Build Docker image from Dockerfile.archlinux
@@ -49,7 +49,7 @@ jobs:
 
       # Step 7: Run Docker container for archlinux image
       - name: Run Docker container for archlinux
-        run: docker run -d --name archlinux-container archlinux-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name archlinux-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp archlinux-image # Run the container in detached mode
 
       # Step 8: Build the Docker image from Dockerfile.centos
       - name: Build Docker image from Dockerfile.centos
@@ -59,7 +59,7 @@ jobs:
       # Step 9: Run the Docker container for centos image
       - name: Run Docker container for centos
         run: echo "Running Docker container for centos"
-        # run: docker run -d --name centos-container centos-image # Run the container in detached mode
+        # run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name centos-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp centos-image # Run the container in detached mode
 
       # Step 10: Build the Docker image from Dockerfile.debian
       - name: Build Docker image from Dockerfile.debian
@@ -67,7 +67,7 @@ jobs:
 
       # Step 11: Run Docker container for debian image
       - name: Run Docker container for debian
-        run: docker run -d --name debian-container debian-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name debian-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp debian-image # Run the container in detached mode
 
       # Step 12: Build the Docker image from Dockerfile.fedora
       - name: Build Docker image from Dockerfile.fedora
@@ -75,7 +75,7 @@ jobs:
 
       # Step 13: Run Docker container for fedora image
       - name: Run Docker container for fedora
-        run: docker run -d --name fedora-container fedora-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name fedora-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp fedora-image # Run the container in detached mode
 
       # Step 14: Build the Docker image from Dockerfile.oraclelinux
       - name: Build Docker image from Dockerfile.oraclelinux
@@ -83,7 +83,7 @@ jobs:
 
       # Step 15: Run Docker container for oraclelinux image
       - name: Run Docker container for oraclelinux
-        run: docker run -d --name oraclelinux-container oraclelinux-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name oraclelinux-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp oraclelinux-image # Run the container in detached mode
 
       # Step 16: Build the Docker image from Dockerfile.rockylinux
       - name: Build Docker image from Dockerfile.rockylinux
@@ -91,7 +91,7 @@ jobs:
 
       # Step 17: Run Docker container for rockylinux image
       - name: Run Docker container for rockylinux
-        run: docker run -d --name rockylinux-container rockylinux-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name rockylinux-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp rockylinux-image # Run the container in detached mode
 
       # Step 18: Build the Docker image from Dockerfile.ubuntu
       - name: Build Docker image from Dockerfile.ubuntu
@@ -99,7 +99,7 @@ jobs:
 
       # Step 19: Run Docker container for ubuntu image
       - name: Run Docker container for ubuntu
-        run: docker run -d --name ubuntu-container ubuntu-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name ubuntu-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp ubuntu-image # Run the container in detached mode
 
       # Step 20: Build the Docker image from Dockerfile.amazonlinux
       - name: Build Docker image from Dockerfile.amazonlinux
@@ -107,7 +107,7 @@ jobs:
 
       # Step 21: Run Docker container for amazonlinux image
       - name: Run Docker container for amazonlinux
-        run: docker run -d --name amazonlinux-container amazonlinux-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name amazonlinux-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp amazonlinux-image # Run the container in detached mode
 
       # Step 22: Build the Docker image from Dockerfile.mageia
       - name: Build Docker image from Dockerfile.mageia
@@ -115,7 +115,7 @@ jobs:
 
       # Step 23: Run Docker container for mageia image
       - name: Run Docker container for mageia
-        run: docker run -d --name mageia-container mageia-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name mageia-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp mageia-image # Run the container in detached mode
 
       # Step 24: Build the Docker image from Dockerfile.opensuse
       - name: Build Docker image from Dockerfile.opensuse
@@ -123,4 +123,4 @@ jobs:
 
       # Step 25: Run Docker container for opensuse image
       - name: Run Docker container for opensuse
-        run: docker run -d --name opensuse-container opensuse-image # Run the container in detached mode
+        run: docker run --dns 1.1.1.1 --dns 1.0.0.1 -d --name opensuse-container --cap-add=NET_ADMIN --device /dev/net/tun -p 1194:1194/udp opensuse-image # Run the container in detached mode

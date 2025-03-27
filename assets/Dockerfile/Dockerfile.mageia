@@ -8,10 +8,10 @@ WORKDIR /app
 RUN urpmi.update -a && urpmi curl bash sudo
 
 # Copy the script into the container
-COPY main.sh /app/main.sh
+COPY openvpn-manager.sh /app/openvpn-manager.sh
 
 # Grant execution permissions to the script
-RUN chmod +x /app/main.sh
+RUN chmod +x /app/openvpn-manager.sh
 
 # Execute the script during build
-RUN /bin/bash /app/main.sh --install
+RUN /bin/bash /app/openvpn-manager.sh --install
