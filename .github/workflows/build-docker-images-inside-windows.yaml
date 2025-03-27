@@ -1,0 +1,35 @@
+# The name of the workflow.
+name: Build Docker Images Inside Windows
+
+# Define the events that trigger the workflow
+on:
+  push:
+    paths:
+      - "**.ps1" 
+      - "Dockerfile.*"
+
+  pull_request:
+    paths:
+      - "**.ps1"
+      - "Dockerfile.*"
+
+  workflow_dispatch: # Manually trigger the workflow
+
+jobs:
+  build-and-run:
+    # This job will run on a Windows runner to support Windows containers
+    runs-on: windows-latest # Use Windows runner for Windows containers
+
+    steps:
+      # Step 1: Checkout the repository to access the Dockerfile and any scripts
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step 2: Build the Docker image from Dockerfile.windows
+      - name: Build Docker image from Dockerfile.windows
+        run: docker build -t windows-image -f assets/Dockerfile/Dockerfile.windows . # Build the image with the tag 'windows-image'
+
+      # Step 3: Run the Docker container for the Windows image
+      - name: Run Docker container for windows
+        # run: docker run -d --name windows-container windows-image # Run the container in detached mode
+        run: docker run -d --name windows-container --isolation=hyperv windows-image # Run the container in detached mode
