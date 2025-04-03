@@ -1570,12 +1570,12 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
   function backup_openvpn_config() {
     # If the OpenVPN config backup file exists, remove it
     if [ -f "${OPENVPN_CONFIG_BACKUP}" ]; then
-      rm --force ${OPENVPN_CONFIG_BACKUP}
+      rm --force "${OPENVPN_CONFIG_BACKUP}"
       echo "Removing existing backup..."
     fi
     # If the system backup path directory does not exist, create it along with any necessary parent directories
     if [ ! -d "${SYSTEM_BACKUP_PATH}" ]; then
-      mkdir --parents ${SYSTEM_BACKUP_PATH}
+      mkdir --parents "${SYSTEM_BACKUP_PATH}"
       echo "Creating backup directory..."
     fi
     # If the OpenVPN path directory exists, proceed with the backup process
@@ -1584,7 +1584,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
       BACKUP_PASSWORD="$(openssl rand -hex 10)"
       echo "${BACKUP_PASSWORD}" >"${OPENVPN_BACKUP_PASSWORD_PATH}"
       # Zip the OpenVPN config file using the generated backup password and save it as a backup
-      zip -P "${BACKUP_PASSWORD}" -rj ${OPENVPN_CONFIG_BACKUP} ${OPENVPN_CONFIG}
+      zip -P "${BACKUP_PASSWORD}" -rj "${OPENVPN_CONFIG_BACKUP}" "${OPENVPN_CONFIG}"
       # Echo the backup password and path to the terminal
       echo "Backup Password: ${BACKUP_PASSWORD}"
       echo "Backup Path: ${OPENVPN_CONFIG_BACKUP}"
@@ -1655,7 +1655,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
         # If the old server host is different from the new one, update the OpenVPN config
         if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
           echo "The server IP address in the configuration file ${CLIENT_PATH} has been updated to ${NEW_SERVER_HOST}"
-          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${CLIENT_PATH}
+          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" "${CLIENT_PATH}"
         fi
       done
       ;;
@@ -1679,7 +1679,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
         # If the old server host is different from the new one, update the OpenVPN config
         if [ "${ESCAPED_OLD_SERVER_HOST}" != "${NEW_SERVER_HOST}" ]; then
           echo "The server IP address in the configuration file ${CLIENT_PATH} has been updated to ${NEW_SERVER_HOST}"
-          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" ${CLIENT_PATH}
+          sed --in-place "s#${ESCAPED_OLD_SERVER_HOST}#${NEW_SERVER_HOST}#" "${CLIENT_PATH}"
         fi
       done
       ;;
@@ -1711,7 +1711,7 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     OPENVPN_CLIENT_CONFIG_FILES=$(find "${OPENVPN_SERVER_CLIENT_DIRECTORY}" -type f -name "*.ovpn")
     for OPENVPN_CLIENT_CONFIG_FILE in "${OPENVPN_CLIENT_CONFIG_FILES[@]}"; do
       echo "Opening the current file: ${OPENVPN_CLIENT_CONFIG_FILE}"
-      sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" ${OPENVPN_CLIENT_CONFIG_FILE}
+      sed -i "/^remote /s/\([0-9]\+\)$/${NEW_OPENVPN_PORT}/" "${OPENVPN_CLIENT_CONFIG_FILE}"
     done
     # Restart the OpenVPN service to apply the changes.
     if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
