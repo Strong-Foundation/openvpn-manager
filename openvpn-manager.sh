@@ -1638,18 +1638,26 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
         apt-get remove --purge openvpn openssl gnupg ca-certificates easy-rsa nftables -y
       elif { [ "${CURRENT_DISTRO}" == "fedora" ] || [ "${CURRENT_DISTRO}" == "centos" ] || [ "${CURRENT_DISTRO}" == "rhel" ] || [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ] || [ "${CURRENT_DISTRO}" == "amzn" ]; }; then
         yum check-update
+        yum remove --purge openvpn openssl gnupg ca-certificates easy-rsa nftables -y
       elif { [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ]; }; then
-      #
+        pacman -Syu --noconfirm
+        pacman -R --noconfirm openvpn openssl gnupg ca-certificates easy-rsa nftables
       elif [ "${CURRENT_DISTRO}" == "alpine" ]; then
-      #
+        apk update
+        apk del openvpn openssl gnupg ca-certificates easy-rsa nftables
       elif [ "${CURRENT_DISTRO}" == "freebsd" ]; then
-      #
+        pkg update
+        pkg purge --yes openvpn openssl gnupg ca-certificates easy-rsa nftables
       elif [ "${CURRENT_DISTRO}" == "ol" ]; then
-      #
+        yum check-update
+        yum remove --purge openvpn openssl gnupg ca-certificates easy-rsa nftables -y
       elif [ "${CURRENT_DISTRO}" == "mageia" ]; then
-      #
+        urpmi.update -a
+        yes | urpmi --remove openvpn openssl gnupg ca-certificates easy-rsa nftables
       elif [ "${CURRENT_DISTRO}" == "opensuse-tumbleweed" ]; then
-      #
+        # For OpenSUSE Tumbleweed, update package lists and install required packages
+        zypper refresh
+        zypper remove --clean-deps --yes openvpn openssl gnupg ca-certificates easy-rsa nftables
       fi
     fi
   }
