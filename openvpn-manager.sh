@@ -78,9 +78,37 @@ function install_resolvconf_or_openresolv() {
   # Check if resolvconf is already installed on the system.
   if [ ! -x "$(command -v resolvconf)" ]; then
     # If resolvconf is not installed, install it for Ubuntu, Debian, Raspbian, Pop, Kali, Linux Mint, and Neon distributions.
-    if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
-      apt-get update
+    if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ] || [ "${CURRENT_DISTRO}" == "pop" ] || [ "${CURRENT_DISTRO}" == "kali" ] || [ "${CURRENT_DISTRO}" == "linuxmint" ] || [ "${CURRENT_DISTRO}" == "neon" ]; }; then
       apt-get install resolvconf -y
+    # For CentOS, RHEL, AlmaLinux, and Rocky distributions, install openresolv.
+    elif { [ "${CURRENT_DISTRO}" == "centos" ] || [ "${CURRENT_DISTRO}" == "rhel" ] || [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ] || [ "${CURRENT_DISTRO}" == "amzn" ]; }; then
+      # If the distribution is CentOS 7, enable the copr repository before installing openresolv.
+      if [ "${CURRENT_DISTRO}" == "centos" ] && [ "${CURRENT_DISTRO_MAJOR_VERSION}" == 7 ]; then
+        yum copr enable macieks/openresolv -y
+      fi
+      yum install openresolv -y
+    # For Fedora and Oracle Linux distributions, install openresolv.
+    elif { [ "${CURRENT_DISTRO}" == "fedora" ] || [ "${CURRENT_DISTRO}" == "ol" ]; }; then
+      yum install openresolv -y
+    # For Arch, Arch ARM, and Manjaro distributions, install resolvconf.
+    elif { [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ]; }; then
+      # Check for updates.
+      pacman -Sy
+      # Install resolvconf.
+      pacman -Su --noconfirm --needed resolvconf
+    # For Alpine Linux, install resolvconf.
+    elif [ "${CURRENT_DISTRO}" == "alpine" ]; then
+      apk update
+      apk add openresolv
+    # For FreeBSD, install resolvconf.
+    elif [ "${CURRENT_DISTRO}" == "freebsd" ]; then
+      pkg install resolvconf
+    elif [ "${CURRENT_DISTRO}" == "mageia" ]; then
+      urpmi.update -a
+      yes | urpmi resolvconf
+    elif [ "${CURRENT_DISTRO}" == "opensuse-tumbleweed" ]; then
+      zypper refresh
+      zypper install -y openresolv
     fi
   fi
 }
@@ -91,13 +119,54 @@ install_resolvconf_or_openresolv
 # Define a function to check system requirements
 function installing_system_requirements() {
   # Check if the current Linux distribution is supported
-  if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+  if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ] || [ "${CURRENT_DISTRO}" == "pop" ] || [ "${CURRENT_DISTRO}" == "kali" ] || [ "${CURRENT_DISTRO}" == "linuxmint" ] || [ "${CURRENT_DISTRO}" == "neon" ] || [ "${CURRENT_DISTRO}" == "fedora" ] || [ "${CURRENT_DISTRO}" == "centos" ] || [ "${CURRENT_DISTRO}" == "rhel" ] || [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ] || [ "${CURRENT_DISTRO}" == "amzn" ] || [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ] || [ "${CURRENT_DISTRO}" == "alpine" ] || [ "${CURRENT_DISTRO}" == "freebsd" ] || [ "${CURRENT_DISTRO}" == "ol" ] || [ "${CURRENT_DISTRO}" == "mageia" ] || [ "${CURRENT_DISTRO}" == "opensuse-tumbleweed" ]; }; then
     # Check if required packages are already installed
     if { [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v sudo)" ] || [ ! -x "$(command -v bash)" ] || [ ! -x "$(command -v cut)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v ip)" ] || [ ! -x "$(command -v systemd-detect-virt)" ] || [ ! -x "$(command -v ps)" ] || [ ! -x "$(command -v lsof)" ] || [ ! -x "$(command -v haveged)" ] || [ ! -x "$(command -v bash)" ]; }; then
       # Install required packages depending on the Linux distribution
-      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ] || [ "${CURRENT_DISTRO}" == "pop" ] || [ "${CURRENT_DISTRO}" == "kali" ] || [ "${CURRENT_DISTRO}" == "linuxmint" ] || [ "${CURRENT_DISTRO}" == "neon" ]; }; then
         apt-get update
         apt-get install curl sudo bash coreutils jq iproute2 systemd procps lsof haveged bash -y
+      elif { [ "${CURRENT_DISTRO}" == "fedora" ] || [ "${CURRENT_DISTRO}" == "centos" ] || [ "${CURRENT_DISTRO}" == "rhel" ] || [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ] || [ "${CURRENT_DISTRO}" == "amzn" ]; }; then
+        # For Red Hat-based distributions, check for updates and install required packages
+        yum check-update
+        if { [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ]; }; then
+          # Install necessary packages for AlmaLinux
+          yum install epel-release elrepo-release -y
+        else
+          yum install epel-release elrepo-release -y --skip-unavailable
+        fi
+        yum install curl sudo bash coreutils jq iproute2 systemd procps-ng lsof haveged bash -y
+      elif { [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ]; }; then
+        # Check for updates.
+        pacman -Sy
+        # Initialize the GPG keyring.
+        pacman-key --init
+        # Populate the keyring with the default Arch Linux keys
+        pacman-key --populate archlinux
+        # For Arch-based distributions, update the keyring and install required packages
+        pacman -Sy --noconfirm --needed archlinux-keyring
+        #
+        pacman -Su --noconfirm --needed curl sudo bash coreutils jq iproute2 systemd procps-ng lsof haveged bash
+      elif [ "${CURRENT_DISTRO}" == "alpine" ]; then
+        # Alpine linux
+        apk update
+        apk add curl sudo bash coreutils jq iproute2 systemd procps-ng lsof haveged bash
+      elif [ "${CURRENT_DISTRO}" == "freebsd" ]; then
+        # For FreeBSD, update package lists and install required packages
+        pkg update
+        pkg install curl sudo bash coreutils jq iproute2 systemd procps-ng lsof haveged bash
+      elif [ "${CURRENT_DISTRO}" == "ol" ]; then
+        # For Oracle Linux (OL), check for updates and install required packages
+        yum check-update
+        yum install curl sudo bash coreutils jq iproute2 systemd procps-ng lsof haveged bash -y --allowerasing
+      elif [ "${CURRENT_DISTRO}" == "mageia" ]; then
+        # For Mageia, update package lists and install required packages
+        urpmi.update -a
+        yes | urpmi curl sudo bash coreutils jq iproute2 systemd procps-ng lsof haveged bash
+      elif [ "${CURRENT_DISTRO}" == "opensuse-tumbleweed" ]; then
+        # For OpenSUSE Tumbleweed, update package lists and install required packages
+        zypper refresh
+        zypper install -y curl sudo bash coreutils jq iproute2 systemd procps-ng lsof haveged bash
       fi
     fi
   else
@@ -158,12 +227,12 @@ check_current_init_system
 # The following function checks if there's enough disk space to proceed with the installation.
 function check_disk_space() {
   # This function checks if there is more than 1 GB of free space on the drive.
-  FREE_SPACE_ON_DRIVE_IN_MB=$(df -m / | tr --squeeze-repeats " " | tail -n1 | cut --delimiter=" " --fields=4)
+  FREE_SPACE_ON_DRIVE_IN_MB=$(df -m / | tr -s " " | tail -n1 | cut -d" " -f4)
   # This line calculates the available free space on the root partition in MB.
   if [ "${FREE_SPACE_ON_DRIVE_IN_MB}" -le 1024 ]; then
     # If the available free space is less than or equal to 1024 MB (1 GB), display an error message and exit.
     echo "Error: You need more than 1 GB of free space to install everything. Please free up some space and try again."
-    exit
+    exit 1 # Exit the script with an error code.
   fi
 }
 
@@ -872,7 +941,7 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
         # Installation commands for Unbound vary based on the Linux distribution.
         # The following checks the distribution and installs Unbound accordingly.
         # For Debian-based distributions:
-        if { [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+        if { [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "raspbian" ] || [ "${CURRENT_DISTRO}" == "pop" ] || [ "${CURRENT_DISTRO}" == "kali" ] || [ "${CURRENT_DISTRO}" == "linuxmint" ] || [ "${CURRENT_DISTRO}" == "neon" ]; }; then
           apt-get install unbound unbound-host unbound-anchor -y
           # If the distribution is Ubuntu, disable systemd-resolved.
           if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
@@ -880,6 +949,33 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
           elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
             service systemd-resolved stop
           fi
+        # For CentOS, RHEL, AlmaLinux, and Rocky:
+        elif { [ "${CURRENT_DISTRO}" == "centos" ] || [ "${CURRENT_DISTRO}" == "rhel" ] || [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ]; }; then
+          yum install unbound unbound-host unbound-anchor -y
+        # For Fedora:
+        elif [ "${CURRENT_DISTRO}" == "fedora" ]; then
+          dnf install unbound unbound-host unbound-anchor -y
+        # For Arch-based distributions:
+        elif { [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ]; }; then
+          pacman -Su --noconfirm --needed unbound
+        # For Alpine Linux:
+        elif [ "${CURRENT_DISTRO}" == "alpine" ]; then
+          apk add unbound unbound-host unbound-anchor
+        # For FreeBSD:
+        elif [ "${CURRENT_DISTRO}" == "freebsd" ]; then
+          pkg install unbound unbound-host unbound-anchor
+        # For Oracle Linux:
+        elif [ "${CURRENT_DISTRO}" == "ol" ]; then
+          yum install unbound unbound-host unbound-anchor -y
+        # For Amazon Linux:
+        elif [ "${CURRENT_DISTRO}" == "amzn" ]; then
+          yum install unbound unbound-host unbound-anchor -y
+        # For Mageia:
+        elif [ "${CURRENT_DISTRO}" == "mageia" ]; then
+          urpmi unbound unbound-host unbound-anchor
+        # For openSUSE Tumbleweed:
+        elif [ "${CURRENT_DISTRO}" == "opensuse-tumbleweed" ]; then
+          zypper install -y unbound # unbound-host unbound-anchor
         fi
       fi
       # Configure Unbound to use the auto-trust-anchor-file.
@@ -971,21 +1067,52 @@ if [ ! -f "${OPENVPN_SERVER_CONFIG}" ]; then
   # Call the function to install Unbound.
   install_unbound
 
-  if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
-    systemctl enable --now haveged
-    systemctl start haveged
-  elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
-    service haveged start
-  fi
+  # Function to enable and start the haveged service.
+  function enable_haveged() {
+    if [[ "${CURRENT_INIT_SYSTEM}" == "systemd" ]]; then
+      systemctl enable --now haveged
+      systemctl start haveged
+    elif [[ "${CURRENT_INIT_SYSTEM}" == "sysvinit" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "init" ]] || [[ "${CURRENT_INIT_SYSTEM}" == "upstart" ]]; then
+      service haveged start
+    fi
+  }
+
+  # Call the function to enable and start the haveged service.
+  enable_haveged
 
   # Function to install openvpn.
   function install_openvpn() {
     # Check if required packages are already installed
     if { [ ! -x "$(command -v openvpn)" ] || [ ! -x "$(command -v openssl)" ] || [ ! -x "$(command -v gpg)" ] || [ ! -x "$(command -v make-cadir)" ] || [ ! -x "$(command -v nft)" ]; }; then
       # Install required packages depending on the Linux distribution
-      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ] || [ "${CURRENT_DISTRO}" == "pop" ] || [ "${CURRENT_DISTRO}" == "kali" ] || [ "${CURRENT_DISTRO}" == "linuxmint" ] || [ "${CURRENT_DISTRO}" == "neon" ]; }; then
+        # For Debian-based distributions, check for updates and install required packages
         apt-get update
         apt-get install openvpn openssl gnupg ca-certificates easy-rsa nftables -y
+      elif { [ "${CURRENT_DISTRO}" == "fedora" ] || [ "${CURRENT_DISTRO}" == "centos" ] || [ "${CURRENT_DISTRO}" == "rhel" ] || [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ] || [ "${CURRENT_DISTRO}" == "amzn" ]; }; then
+        # For Red Hat-based distributions, check for updates and install required packages
+        yum update -y
+        yum install openvpn openssl gnupg ca-certificates easy-rsa nftables -y
+      elif { [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ]; }; then
+        # Check for updates.
+        pacman -Sy
+        pacman -S --noconfirm --needed openvpn openssl gnupg ca-certificates easy-rsa nftables
+      elif [ "${CURRENT_DISTRO}" == "alpine" ]; then
+        # For Alpine Linux
+        apk update
+        apk add openvpn openssl gnupg ca-certificates easy-rsa nftables
+      elif [ "${CURRENT_DISTRO}" == "freebsd" ]; then
+        # For FreeBSD, install OpenVPN and Easy-RSA
+        pkg install openvpn easy-rsa -y
+      elif [ "${CURRENT_DISTRO}" == "ol" ]; then
+        # For Oracle Linux, install OpenVPN and Easy-RSA
+        yum install openvpn easy-rsa -y
+      elif [ "${CURRENT_DISTRO}" == "mageia" ]; then
+        # For Mageia, install OpenVPN and Easy-RSA
+        urpmi openvpn easy-rsa nftables
+      elif [ "${CURRENT_DISTRO}" == "opensuse-tumbleweed" ]; then
+        # For openSUSE Tumbleweed, install OpenVPN and Easy-RSA
+        zypper install -y openvpn easy-rsa nftables
       fi
     fi
 
@@ -1506,9 +1633,23 @@ ${OPENVPN_SERVER_TLS_CRYPT_KEY_CONTENT}
     # Check if required packages are already installed
     if { [ -x "$(command -v openvpn)" ] || [ -x "$(command -v openssl)" ] || [ -x "$(command -v gpg)" ] || [ -x "$(command -v make-cadir)" ] || [ -x "$(command -v nft)" ]; }; then
       # Install required packages depending on the Linux distribution
-      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ]; }; then
+      if { [ "${CURRENT_DISTRO}" == "ubuntu" ] || [ "${CURRENT_DISTRO}" == "debian" ] || [ "${CURRENT_DISTRO}" == "raspbian" ] || [ "${CURRENT_DISTRO}" == "pop" ] || [ "${CURRENT_DISTRO}" == "kali" ] || [ "${CURRENT_DISTRO}" == "linuxmint" ] || [ "${CURRENT_DISTRO}" == "neon" ]; }; then
         apt-get update
         apt-get remove --purge openvpn openssl gnupg ca-certificates easy-rsa nftables -y
+      elif { [ "${CURRENT_DISTRO}" == "fedora" ] || [ "${CURRENT_DISTRO}" == "centos" ] || [ "${CURRENT_DISTRO}" == "rhel" ] || [ "${CURRENT_DISTRO}" == "almalinux" ] || [ "${CURRENT_DISTRO}" == "rocky" ] || [ "${CURRENT_DISTRO}" == "amzn" ]; }; then
+        yum check-update
+      elif { [ "${CURRENT_DISTRO}" == "arch" ] || [ "${CURRENT_DISTRO}" == "archarm" ] || [ "${CURRENT_DISTRO}" == "manjaro" ]; }; then
+      #
+      elif [ "${CURRENT_DISTRO}" == "alpine" ]; then
+      #
+      elif [ "${CURRENT_DISTRO}" == "freebsd" ]; then
+      #
+      elif [ "${CURRENT_DISTRO}" == "ol" ]; then
+      #
+      elif [ "${CURRENT_DISTRO}" == "mageia" ]; then
+      #
+      elif [ "${CURRENT_DISTRO}" == "opensuse-tumbleweed" ]; then
+      #
       fi
     fi
   }
